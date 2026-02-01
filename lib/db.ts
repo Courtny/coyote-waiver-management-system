@@ -9,6 +9,14 @@ const dbPath = isVercel
   ? '/tmp/waivers.db'
   : path.join(process.cwd(), 'waivers.db');
 
+// Log database path for debugging
+console.log('Database path:', dbPath);
+console.log('Vercel env vars:', {
+  VERCEL: process.env.VERCEL,
+  VERCEL_ENV: process.env.VERCEL_ENV,
+  NODE_ENV: process.env.NODE_ENV
+});
+
 // Ensure database file exists
 try {
   if (!fs.existsSync(dbPath)) {

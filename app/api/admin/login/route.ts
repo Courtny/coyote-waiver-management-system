@@ -4,6 +4,7 @@ import { authenticateAdmin, generateToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
+    console.log('Login attempt for username:', username);
 
     if (!username || !password) {
       return NextResponse.json(
@@ -13,8 +14,10 @@ export async function POST(request: NextRequest) {
     }
 
     const isValid = await authenticateAdmin(username, password);
+    console.log('Authentication result:', isValid);
     
     if (!isValid) {
+      console.log('Authentication failed for username:', username);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
