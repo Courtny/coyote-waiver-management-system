@@ -25,9 +25,19 @@ export function verifyToken(token: string): { username: string } | null {
 }
 
 export async function createAdminUser(username: string, password: string): Promise<void> {
-  const passwordHash = await hashPassword(password);
-  const stmt = db.prepare('INSERT INTO admin_users (username, passwordHash) VALUES (?, ?)');
-  stmt.run(username, passwordHash);
+  try {
+    const passwordHash = await hashPassword(password);
+    const stmt = db.prepare('INSERT INTO admin_users (username, passwordHash) VALUES (?, ?)');
+    stmt.run(username, passwordHash);
+  } catch (error: any) {
+    console.error('createAdminUser error:', error);
+    console.error('Database error details:', {
+      message: error?.message,
+      code: error?.code,
+      errno: error?.errno
+    });
+    throw error;
+  }
 }
 
 export async function authenticateAdmin(username: string, password: string): Promise<boolean> {

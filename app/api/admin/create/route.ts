@@ -51,6 +51,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating admin user:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name
+    });
     
     // Check if user already exists
     if (error.message?.includes('UNIQUE constraint') || error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -60,8 +66,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Return more detailed error in development, generic in production
+    const isDevelopment = process.env.NODE_ENV !== 'production';
     return NextResponse.json(
-      { error: 'Failed to create admin user' },
+      { 
+        error: 'Failed to create admin user',
+        ...(isDevelopment && {
+          details: error?.message || String(error),
+          code: error?.code
+        })
+      },
       { status: 500 }
     );
   }

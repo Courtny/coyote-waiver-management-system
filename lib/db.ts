@@ -2,14 +2,36 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const dbPath = path.join(process.cwd(), 'waivers.db');
+// On Vercel/serverless, use /tmp directory which is writable
+// Otherwise use the project directory
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+const dbPath = isVercel 
+  ? '/tmp/waivers.db'
+  : path.join(process.cwd(), 'waivers.db');
 
 // Ensure database file exists
-if (!fs.existsSync(dbPath)) {
-  fs.writeFileSync(dbPath, '');
+try {
+  if (!fs.existsSync(dbPath)) {
+    // Ensure directory exists
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    fs.writeFileSync(dbPath, '');
+  }
+} catch (error) {
+  console.error('Error creating database file:', error);
+  throw error;
 }
 
-const db = new Database(dbPath);
+let db: Database.Database;
+try {
+  db = new Database(dbPath);
+} catch (error) {
+  console.error('Error opening database:', error);
+  console.error('Database path:', dbPath);
+  throw error;
+}
 
 // Initialize database schema
 export function initDatabase() {
@@ -109,6 +131,11 @@ export function initDatabase() {
 }
 
 // Initialize on import
-initDatabase();
+try {
+  initDatabase();
+} catch (error) {
+  console.error('Error initializing database:', error);
+  throw error;
+}
 
 export default db;
