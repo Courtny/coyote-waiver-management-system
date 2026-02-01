@@ -264,7 +264,7 @@ export default function WaiverPage() {
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
                 <li>Keeping goggles/masks on at all times in playing areas</li>
-                <li>Following "barrel sock" and safety-on protocols in staging areas</li>
+                <li>Following &quot;barrel sock&quot; and safety-on protocols in staging areas</li>
                 <li>Maintaining the minimum engagement distances</li>
               </ul>
               <p className="text-sm text-gray-600 leading-relaxed">
@@ -332,7 +332,7 @@ export default function WaiverPage() {
                 6. Photo Release
               </h3>
               <p className="text-gray-700 leading-relaxed">
-                I hereby grant C&L Enterprises DBA Coyote Airsoft and Paintball permission to use my likeness in a photograph, video, or other digital media ("photos") in any and all of its publications, including web-based publications, without payment or other consideration. I understand and agree that all photos will become the property of Coyote Airsoft and Paintball and will not be returned. I hereby irrevocably authorize Coyote Airsoft and Paintball to edit, alter, copy, exhibit, publish, or distribute these photos for any lawful purpose.
+                I hereby grant C&L Enterprises DBA Coyote Airsoft and Paintball permission to use my likeness in a photograph, video, or other digital media (&quot;photos&quot;) in any and all of its publications, including web-based publications, without payment or other consideration. I understand and agree that all photos will become the property of Coyote Airsoft and Paintball and will not be returned. I hereby irrevocably authorize Coyote Airsoft and Paintball to edit, alter, copy, exhibit, publish, or distribute these photos for any lawful purpose.
               </p>
               <div className="form-group">
                 <label className="flex items-center gap-2 cursor-pointer">

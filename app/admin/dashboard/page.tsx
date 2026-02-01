@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
@@ -17,24 +17,7 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/check');
-        if (response.status === 401 || !response.ok) {
-          router.push('/admin/login');
-        } else {
-          setIsAuthenticated(true);
-          loadAllWaivers();
-        }
-      } catch {
-        router.push('/admin/login');
-      }
-    };
-    checkAuth();
-  }, [router]);
-
-  const loadAllWaivers = async () => {
+  const loadAllWaivers = useCallback(async () => {
     setIsLoadingAll(true);
     setError('');
 
@@ -57,7 +40,24 @@ export default function AdminDashboard() {
     } finally {
       setIsLoadingAll(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/check');
+        if (response.status === 401 || !response.ok) {
+          router.push('/admin/login');
+        } else {
+          setIsAuthenticated(true);
+          loadAllWaivers();
+        }
+      } catch {
+        router.push('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router, loadAllWaivers]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +243,7 @@ export default function AdminDashboard() {
         {isSearchMode && searchQuery && searchResults.length === 0 && !isLoading && (
           <div className="card">
             <p className="text-center text-gray-600">
-              No waivers found for "{searchQuery}"
+              No waivers found for &quot;{searchQuery}&quot;
             </p>
           </div>
         )}

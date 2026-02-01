@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 
@@ -32,24 +32,7 @@ export default function WaiverDetailPage() {
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/check');
-        if (response.status === 401 || !response.ok) {
-          router.push('/admin/login');
-        } else {
-          setIsAuthenticated(true);
-          loadWaiver();
-        }
-      } catch {
-        router.push('/admin/login');
-      }
-    };
-    checkAuth();
-  }, [router]);
-
-  const loadWaiver = async () => {
+  const loadWaiver = useCallback(async () => {
     setIsLoading(true);
     setError('');
 
@@ -73,7 +56,24 @@ export default function WaiverDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id, router]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/check');
+        if (response.status === 401 || !response.ok) {
+          router.push('/admin/login');
+        } else {
+          setIsAuthenticated(true);
+          loadWaiver();
+        }
+      } catch {
+        router.push('/admin/login');
+      }
+    };
+    checkAuth();
+  }, [router, loadWaiver]);
 
   if (!isAuthenticated) {
     return (
@@ -194,7 +194,7 @@ export default function WaiverDetailPage() {
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
                 <li>Keeping goggles/masks on at all times in playing areas</li>
-                <li>Following "barrel sock" and safety-on protocols in staging areas</li>
+                <li>Following &quot;barrel sock&quot; and safety-on protocols in staging areas</li>
                 <li>Maintaining the minimum engagement distances</li>
               </ul>
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -231,7 +231,7 @@ export default function WaiverDetailPage() {
                 6. Photo Release
               </h3>
               <p className="text-gray-700 leading-relaxed">
-                I hereby grant C&L Enterprises DBA Coyote Airsoft and Paintball permission to use my likeness in a photograph, video, or other digital media ("photos") in any and all of its publications, including web-based publications, without payment or other consideration. I understand and agree that all photos will become the property of Coyote Airsoft and Paintball and will not be returned. I hereby irrevocably authorize Coyote Airsoft and Paintball to edit, alter, copy, exhibit, publish, or distribute these photos for any lawful purpose.
+                I hereby grant C&L Enterprises DBA Coyote Airsoft and Paintball permission to use my likeness in a photograph, video, or other digital media (&quot;photos&quot;) in any and all of its publications, including web-based publications, without payment or other consideration. I understand and agree that all photos will become the property of Coyote Airsoft and Paintball and will not be returned. I hereby irrevocably authorize Coyote Airsoft and Paintball to edit, alter, copy, exhibit, publish, or distribute these photos for any lawful purpose.
               </p>
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">
