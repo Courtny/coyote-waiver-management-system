@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { sql } from '@/lib/db';
 import { Waiver } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
@@ -23,34 +23,32 @@ export async function POST(request: NextRequest) {
                      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    const stmt = db.prepare(`
+    const signatureDate = new Date().toISOString();
+    
+    await sql`
       INSERT INTO waivers (
         firstName, lastName, email, yearOfBirth, phone,
         emergencyContactPhone, safetyRulesInitial, medicalConsentInitial,
         photoRelease, minorNames, signature, signatureDate, 
         ipAddress, userAgent, waiverYear
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const signatureDate = new Date().toISOString();
-    
-    stmt.run(
-      body.firstName,
-      body.lastName,
-      body.email,
-      body.yearOfBirth,
-      body.phone || null,
-      body.emergencyContactPhone,
-      body.safetyRulesInitial,
-      body.medicalConsentInitial,
-      body.photoRelease ? 1 : 0,
-      body.minorNames || null,
-      body.signature,
-      signatureDate,
-      ipAddress,
-      userAgent,
-      currentYear
-    );
+      ) VALUES (
+        ${body.firstName},
+        ${body.lastName},
+        ${body.email},
+        ${body.yearOfBirth},
+        ${body.phone || null},
+        ${body.emergencyContactPhone},
+        ${body.safetyRulesInitial},
+        ${body.medicalConsentInitial},
+        ${body.photoRelease || false},
+        ${body.minorNames || null},
+        ${body.signature},
+        ${signatureDate},
+        ${ipAddress},
+        ${userAgent},
+        ${currentYear}
+      )
+    `;
 
     return NextResponse.json({ 
       success: true,

@@ -51,31 +51,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating admin user:', error);
-    console.error('Error details:', {
-      message: error?.message,
-      code: error?.code,
-      stack: error?.stack,
-      name: error?.name
-    });
     
-    // Check if user already exists
-    if (error.message?.includes('UNIQUE constraint') || error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    // Check if user already exists (PostgreSQL unique constraint violation)
+    if (error.message?.includes('duplicate key') || error.code === '23505') {
       return NextResponse.json(
         { error: 'Username already exists' },
         { status: 409 }
       );
     }
 
-    // Return more detailed error in development, generic in production
-    const isDevelopment = process.env.NODE_ENV !== 'production';
     return NextResponse.json(
-      { 
-        error: 'Failed to create admin user',
-        ...(isDevelopment && {
-          details: error?.message || String(error),
-          code: error?.code
-        })
-      },
+      { error: 'Failed to create admin user' },
       { status: 500 }
     );
   }

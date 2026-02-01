@@ -113,22 +113,27 @@ Test the following:
 
 ## Important Notes
 
-### Database Persistence
+### Database Setup (Vercel Postgres)
 
-**⚠️ Important**: Vercel uses serverless functions with an ephemeral filesystem. SQLite files may not persist reliably across deployments.
+**Current Setup**: The application uses Vercel Postgres for persistent data storage.
 
-**Current Setup**: SQLite will work for initial deployment and small-scale usage, but data may be lost during deployments.
+**To set up Vercel Postgres:**
 
-**Recommended for Production**: Migrate to Vercel Postgres (free tier available) for reliable data persistence. See migration guide below.
+1. Go to your Vercel project dashboard
+2. Navigate to the **Storage** tab
+3. Click **Create Database** and select **Postgres**
+4. Choose a name for your database (e.g., "waivers-db")
+5. Select a region closest to your users
+6. Vercel will automatically:
+   - Create the database
+   - Add the `POSTGRES_URL` environment variable to your project
+   - Configure connection pooling
 
-### Future Database Migration to Vercel Postgres
+**Environment Variables:**
+- `POSTGRES_URL` - Automatically set by Vercel when you create the Postgres database
+- `JWT_SECRET` - Set this manually for production (use a strong random string)
 
-When ready to migrate to a production database:
-
-1. Create Vercel Postgres database in Vercel dashboard
-2. Update `lib/db.ts` to use PostgreSQL connection
-3. Migrate schema and existing data
-4. Update environment variables with database connection string
+The database schema will be automatically created on first use when the application runs.
 
 ## Troubleshooting
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(
@@ -33,7 +33,7 @@ export async function GET(
     }
 
     // Fetch single waiver by ID
-    const stmt = db.prepare(`
+    const result = await sql`
       SELECT 
         id,
         firstName,
@@ -53,19 +53,19 @@ export async function GET(
         ipAddress,
         userAgent
       FROM waivers
-      WHERE id = ?
-    `);
+      WHERE id = ${waiverId}
+    `;
 
-    const waiver = stmt.get(waiverId) as any;
-
-    if (!waiver) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Waiver not found' },
         { status: 404 }
       );
     }
 
-    // Convert photoRelease from integer to boolean
+    const waiver = result.rows[0] as any;
+    
+    // Ensure photoRelease is boolean (PostgreSQL returns it as boolean, but ensure type safety)
     waiver.photoRelease = Boolean(waiver.photoRelease);
 
     return NextResponse.json({ waiver });

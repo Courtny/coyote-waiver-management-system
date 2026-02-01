@@ -1,4 +1,4 @@
-import db from '../lib/db';
+import { initDatabase } from '../lib/db';
 import { createAdminUser } from '../lib/auth';
 
 async function main() {
@@ -12,6 +12,8 @@ async function main() {
   const [username, password] = args;
 
   try {
+    // Initialize database schema first
+    await initDatabase();
     await createAdminUser(username, password);
     console.log(`✓ Admin user "${username}" created successfully`);
     process.exit(0);

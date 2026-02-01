@@ -10,8 +10,8 @@
     "create-admin": "tsx scripts/create-admin.ts"
   },
   "dependencies": {
+    "@vercel/postgres": "^0.11.0",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^12.6.2",
     "date-fns": "^3.0.6",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.303.0",
@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.8",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
