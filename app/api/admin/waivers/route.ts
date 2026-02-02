@@ -28,19 +28,19 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(
       `SELECT 
         id,
-        firstName,
-        lastName,
+        firstname as "firstName",
+        lastname as "lastName",
         email,
-        yearOfBirth,
-        signatureDate,
-        waiverYear,
-        minorNames,
+        yearofbirth as "yearOfBirth",
+        signaturedate as "signatureDate",
+        waiveryear as "waiverYear",
+        minornames as "minorNames",
         CASE 
-          WHEN waiverYear = $1 THEN 1 
+          WHEN waiveryear = $1 THEN 1 
           ELSE 0 
-        END as hasCurrentYearWaiver
+        END as "hasCurrentYearWaiver"
       FROM waivers
-      ORDER BY signatureDate DESC
+      ORDER BY signaturedate DESC
       LIMIT 200`,
       [currentYear]
     );

@@ -34,22 +34,22 @@ export async function initDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS waivers (
         id SERIAL PRIMARY KEY,
-        firstName TEXT NOT NULL,
-        lastName TEXT NOT NULL,
+        "firstName" TEXT NOT NULL,
+        "lastName" TEXT NOT NULL,
         email TEXT NOT NULL,
-        yearOfBirth TEXT NOT NULL,
+        "yearOfBirth" TEXT NOT NULL,
         phone TEXT,
-        emergencyContactPhone TEXT NOT NULL,
-        safetyRulesInitial TEXT NOT NULL,
-        medicalConsentInitial TEXT NOT NULL,
-        photoRelease BOOLEAN NOT NULL DEFAULT false,
-        minorNames TEXT,
+        "emergencyContactPhone" TEXT NOT NULL,
+        "safetyRulesInitial" TEXT NOT NULL,
+        "medicalConsentInitial" TEXT NOT NULL,
+        "photoRelease" BOOLEAN NOT NULL DEFAULT false,
+        "minorNames" TEXT,
         signature TEXT NOT NULL,
-        signatureDate TEXT NOT NULL,
-        ipAddress TEXT,
-        userAgent TEXT,
-        createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        waiverYear INTEGER NOT NULL
+        "signatureDate" TEXT NOT NULL,
+        "ipAddress" TEXT,
+        "userAgent" TEXT,
+        "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "waiverYear" INTEGER NOT NULL
       )
     `);
 

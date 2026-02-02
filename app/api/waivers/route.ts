@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     
     await pool.query(
       `INSERT INTO waivers (
-        firstName, lastName, email, yearOfBirth, phone,
-        emergencyContactPhone, safetyRulesInitial, medicalConsentInitial,
-        photoRelease, minorNames, signature, signatureDate, 
-        ipAddress, userAgent, waiverYear
+        firstname, lastname, email, yearofbirth, phone,
+        emergencycontactphone, safetyrulesinitial, medicalconsentinitial,
+        photorelease, minornames, signature, signaturedate, 
+        ipaddress, useragent, waiveryear
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
       [
         body.firstName,

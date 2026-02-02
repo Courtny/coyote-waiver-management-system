@@ -36,22 +36,22 @@ export async function GET(
     const result = await pool.query(
       `SELECT 
         id,
-        firstName,
-        lastName,
+        firstname as "firstName",
+        lastname as "lastName",
         email,
-        yearOfBirth,
+        yearofbirth as "yearOfBirth",
         phone,
-        emergencyContactPhone,
-        safetyRulesInitial,
-        medicalConsentInitial,
-        photoRelease,
-        minorNames,
+        emergencycontactphone as "emergencyContactPhone",
+        safetyrulesinitial as "safetyRulesInitial",
+        medicalconsentinitial as "medicalConsentInitial",
+        photorelease as "photoRelease",
+        minornames as "minorNames",
         signature,
-        signatureDate,
-        waiverYear,
-        createdAt,
-        ipAddress,
-        userAgent
+        signaturedate as "signatureDate",
+        waiveryear as "waiverYear",
+        createdat as "createdAt",
+        ipaddress as "ipAddress",
+        useragent as "userAgent"
       FROM waivers
       WHERE id = $1`,
       [waiverId]

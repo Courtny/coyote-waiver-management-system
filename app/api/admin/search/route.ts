@@ -38,24 +38,24 @@ export async function GET(request: NextRequest) {
     const result = await pool.query(
       `SELECT 
         id,
-        firstName,
-        lastName,
+        firstname as "firstName",
+        lastname as "lastName",
         email,
-        yearOfBirth,
-        signatureDate,
-        waiverYear,
-        minorNames,
+        yearofbirth as "yearOfBirth",
+        signaturedate as "signatureDate",
+        waiveryear as "waiverYear",
+        minornames as "minorNames",
         CASE 
-          WHEN waiverYear = $1 THEN 1 
+          WHEN waiveryear = $1 THEN 1 
           ELSE 0 
-        END as hasCurrentYearWaiver
+        END as "hasCurrentYearWaiver"
       FROM waivers
       WHERE 
-        firstName LIKE $2 OR 
-        lastName LIKE $2 OR
-        (firstName || ' ' || lastName) LIKE $2 OR
-        minorNames LIKE $2
-      ORDER BY waiverYear DESC, signatureDate DESC
+        firstname LIKE $2 OR 
+        lastname LIKE $2 OR
+        (firstname || ' ' || lastname) LIKE $2 OR
+        minornames LIKE $2
+      ORDER BY waiveryear DESC, signaturedate DESC
       LIMIT 50`,
       [currentYear, searchTerm]
     );

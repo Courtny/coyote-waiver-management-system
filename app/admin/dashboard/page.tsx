@@ -239,7 +239,17 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-gray-600">
-                        {new Date(result.signatureDate).toLocaleDateString()}
+                        {result.signatureDate ? (() => {
+                          try {
+                            const date = new Date(result.signatureDate);
+                            if (isNaN(date.getTime())) {
+                              return 'Invalid Date';
+                            }
+                            return date.toLocaleDateString();
+                          } catch {
+                            return 'Invalid Date';
+                          }
+                        })() : 'N/A'}
                       </td>
                     </tr>
                   ))}
