@@ -292,7 +292,17 @@ export default function AdminUsersPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
-                          {new Date(user.createdAt).toLocaleDateString()} {new Date(user.createdAt).toLocaleTimeString()}
+                          {user.createdAt ? (() => {
+                            try {
+                              const date = new Date(user.createdAt);
+                              if (isNaN(date.getTime())) {
+                                return 'Invalid Date';
+                              }
+                              return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                            } catch {
+                              return 'Invalid Date';
+                            }
+                          })() : 'N/A'}
                         </td>
                         <td className="px-4 py-3">
                           {isCurrentUser ? (

@@ -110,9 +110,17 @@ export interface AdminUser {
 
 export async function listAdminUsers(): Promise<AdminUser[]> {
   const result = await pool.query(
-    'SELECT id, username, createdAt FROM admin_users ORDER BY createdAt DESC'
+    'SELECT id, username, createdat FROM admin_users ORDER BY createdat DESC'
   );
-  return result.rows as AdminUser[];
+  console.log('listAdminUsers raw result:', JSON.stringify(result.rows, null, 2));
+  // PostgreSQL returns lowercase column names for unquoted identifiers, so normalize them
+  const users = result.rows.map((row: any) => ({
+    id: row.id,
+    username: row.username,
+    createdAt: row.createdat || row.createdAt || new Date().toISOString(),
+  }));
+  console.log('listAdminUsers normalized users:', JSON.stringify(users, null, 2));
+  return users as AdminUser[];
 }
 
 export async function getAdminUserById(id: number): Promise<AdminUser | null> {
