@@ -27,7 +27,7 @@ export function verifyToken(token: string): { username: string } | null {
 export async function createAdminUser(username: string, password: string): Promise<void> {
   const passwordHash = await hashPassword(password);
   await pool.query(
-    'INSERT INTO admin_users (username, "passwordHash") VALUES ($1, $2)',
+    'INSERT INTO admin_users (username, passwordhash) VALUES ($1, $2)',
     [username, passwordHash]
   );
 }
@@ -41,7 +41,7 @@ export async function authenticateAdmin(username: string, password: string): Pro
     console.log('All users in database:', allUsersResult.rows);
     
     const result = await pool.query(
-      'SELECT "passwordHash" FROM admin_users WHERE username = $1',
+      'SELECT passwordhash FROM admin_users WHERE username = $1',
       [username]
     );
     
@@ -52,7 +52,7 @@ export async function authenticateAdmin(username: string, password: string): Pro
     if (result.rows.length === 0) {
       // Try case-insensitive search
       const caseInsensitiveResult = await pool.query(
-        'SELECT username, "passwordHash" FROM admin_users WHERE LOWER(username) = LOWER($1)',
+        'SELECT username, passwordhash FROM admin_users WHERE LOWER(username) = LOWER($1)',
         [username]
       );
       
@@ -66,7 +66,7 @@ export async function authenticateAdmin(username: string, password: string): Pro
       const user = caseInsensitiveResult.rows[0] as any;
       console.log('Found user with case-insensitive match:', user.username);
       console.log('Case-insensitive user object:', JSON.stringify(user, null, 2));
-      const passwordHash = user.passwordHash || user.passwordhash;
+      const passwordHash = user.passwordhash || user.passwordHash;
       console.log('passwordHash from case-insensitive:', passwordHash);
       
       if (!passwordHash) {
@@ -83,8 +83,8 @@ export async function authenticateAdmin(username: string, password: string): Pro
     console.log('Found user with exact match');
     console.log('User object:', JSON.stringify(user, null, 2));
     console.log('User object keys:', Object.keys(user));
-    // PostgreSQL might return lowercase column names
-    const passwordHash = user.passwordHash || user.passwordhash;
+    // PostgreSQL returns lowercase column names for unquoted identifiers
+    const passwordHash = user.passwordhash || user.passwordHash;
     console.log('passwordHash value:', passwordHash);
     console.log('passwordHash type:', typeof passwordHash);
     
