@@ -15,6 +15,7 @@ A comprehensive waiver management system for Coyote Force Airsoft and Paintball 
   - View waiver status (current year validation)
   - See all waiver submissions with details
   - Secure authentication system
+  - Admin user management interface
 
 - **Current Year Validation**: Automatically tracks and validates if a player has a waiver on file for the current year
 
@@ -60,6 +61,8 @@ For example:
 ```bash
 npm run create-admin admin mySecurePassword123
 ```
+
+**Note:** After creating your first admin user, you can log in to the admin dashboard and use the **Admin User Management** page (`/admin/users`) to create and manage additional admin users through the web interface.
 
 5. Run the development server:
 ```bash

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
-import { Search, LogOut, CheckCircle, XCircle } from 'lucide-react';
+import { Search, LogOut, CheckCircle, XCircle, Users } from 'lucide-react';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -120,13 +120,22 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Admin Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/users"
+              className="btn btn-secondary flex items-center gap-2"
+            >
+              <Users size={18} />
+              Manage Users
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="btn btn-secondary flex items-center gap-2"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="card mb-6">

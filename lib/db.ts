@@ -2,9 +2,29 @@ import { Pool } from 'pg';
 
 // Create connection pool
 // Uses DATABASE_URL or POSTGRES_URL from environment variables (Supabase provides this)
+let connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
+const isSupabase = connectionString?.includes('supabase') || connectionString?.includes('pooler.supabase.com');
+
+// For Supabase connections, ensure SSL is properly configured
+// Remove conflicting sslmode from connection string and handle in Pool config
+if (isSupabase && connectionString) {
+  // Remove sslmode parameter (but keep other parameters)
+  connectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, (match) => {
+    // If it's the first parameter (starts with ?), replace ? with ?
+    // If it's a subsequent parameter (starts with &), just remove it
+    return match.startsWith('?') ? '?' : '';
+  });
+  // Clean up any double ? or & characters
+  connectionString = connectionString.replace(/\?+/, '?').replace(/&+/g, '&').replace(/\?&/g, '?').replace(/[?&]$/, '');
+}
+
+// For Supabase, always use SSL with rejectUnauthorized: false
+// For other connections, use SSL in production only
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: isSupabase 
+    ? { rejectUnauthorized: false } 
+    : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false),
 });
 
 // Initialize database schema
@@ -53,12 +73,28 @@ export async function initDatabase() {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_waiver_minors ON waivers(minorNames)
     `);
-  } catch (error) {
-    // If tables already exist, that's fine
-    if (error instanceof Error && !error.message.includes('already exists')) {
+  } catch (error: any) {
+    // If tables/indexes already exist, that's fine - ignore those errors
+    if (error instanceof Error) {
+      const errorMessage = error.message || '';
+      const errorCode = error.code || '';
+      
+      // PostgreSQL errors for existing objects
+      if (
+        errorMessage.includes('already exists') ||
+        errorCode === '42P07' || // duplicate_table
+        errorCode === '42710' || // duplicate_object
+        errorCode === '23505' || // unique_violation (for sequences/indexes)
+        errorMessage.includes('duplicate key')
+      ) {
+        // These are expected - tables/indexes already exist
+        return;
+      }
+      
       console.error('Error initializing database:', error);
       throw error;
     }
+    throw error;
   }
 }
 

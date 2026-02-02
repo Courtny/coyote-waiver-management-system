@@ -33,26 +33,76 @@ export async function createAdminUser(username: string, password: string): Promi
 }
 
 export async function authenticateAdmin(username: string, password: string): Promise<boolean> {
-  const result = await pool.query(
-    'SELECT passwordHash FROM admin_users WHERE username = $1',
-    [username]
-  );
-  
-  if (result.rows.length === 0) {
-    // Try case-insensitive search
-    const caseInsensitiveResult = await pool.query(
-      'SELECT username, passwordHash FROM admin_users WHERE LOWER(username) = LOWER($1)',
+  try {
+    console.log('authenticateAdmin called with username:', username);
+    
+    // First, check all users in database for debugging
+    const allUsersResult = await pool.query('SELECT username FROM admin_users');
+    console.log('All users in database:', allUsersResult.rows);
+    
+    const result = await pool.query(
+      'SELECT passwordHash FROM admin_users WHERE username = $1',
       [username]
     );
     
-    if (caseInsensitiveResult.rows.length === 0) {
-      return false;
+    console.log('Exact match query result:', result.rows.length > 0 ? 'Found' : 'Not found');
+    
+    if (result.rows.length === 0) {
+      // Try case-insensitive search
+      const caseInsensitiveResult = await pool.query(
+        'SELECT username, passwordHash FROM admin_users WHERE LOWER(username) = LOWER($1)',
+        [username]
+      );
+      
+      console.log('Case-insensitive query result:', caseInsensitiveResult.rows.length > 0 ? 'Found' : 'Not found');
+      
+      if (caseInsensitiveResult.rows.length === 0) {
+        console.log('No user found with username:', username);
+        return false;
+      }
+      
+      const user = caseInsensitiveResult.rows[0] as { username: string, passwordHash: string };
+      console.log('Found user with case-insensitive match:', user.username);
+      const isValid = await verifyPassword(password, user.passwordHash);
+      console.log('Password verification result:', isValid);
+      return isValid;
     }
     
-    const user = caseInsensitiveResult.rows[0] as { passwordHash: string };
-    return verifyPassword(password, user.passwordHash);
+    const user = result.rows[0] as { passwordHash: string };
+    console.log('Found user with exact match');
+    const isValid = await verifyPassword(password, user.passwordHash);
+    console.log('Password verification result:', isValid);
+    return isValid;
+  } catch (error) {
+    console.error('Error in authenticateAdmin:', error);
+    throw error;
   }
-  
-  const user = result.rows[0] as { passwordHash: string };
-  return verifyPassword(password, user.passwordHash);
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  createdAt: string;
+}
+
+export async function listAdminUsers(): Promise<AdminUser[]> {
+  const result = await pool.query(
+    'SELECT id, username, createdAt FROM admin_users ORDER BY createdAt DESC'
+  );
+  return result.rows as AdminUser[];
+}
+
+export async function getAdminUserById(id: number): Promise<AdminUser | null> {
+  const result = await pool.query(
+    'SELECT id, username, createdAt FROM admin_users WHERE id = $1',
+    [id]
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  return result.rows[0] as AdminUser;
+}
+
+export async function deleteAdminUser(id: number): Promise<void> {
+  await pool.query('DELETE FROM admin_users WHERE id = $1', [id]);
 }

@@ -74,30 +74,35 @@ Configure DNS at your domain registrar (where `coyoteforce.com` is managed):
 2. Wait for DNS propagation (check status in Vercel dashboard)
 3. SSL certificate will be automatically provisioned by Vercel
 
-## Step 7: Create Admin User
+## Step 7: Create Initial Admin User
 
-After deployment, create your admin user using one of these methods:
+After deployment, you need to create your first admin user. You have two options:
 
-### Method A: Temporary API Endpoint (Easiest)
-
-1. The temporary endpoint `/api/admin/create` has been created for you
-2. Make a POST request to create an admin user:
-
-```bash
-curl -X POST https://waiver.coyoteforce.com/api/admin/create \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "yourSecurePassword123"}'
-```
-
-Or use a tool like Postman or your browser's developer console.
-
-3. **IMPORTANT**: After creating the admin user, **DELETE** the file `app/api/admin/create/route.ts` and commit the change. This endpoint is a security risk if left active.
-
-### Method B: Vercel CLI
+### Method A: Using the Script (Recommended for Initial Setup)
 
 1. Install Vercel CLI: `npm i -g vercel`
 2. Run: `vercel env pull` to sync environment variables
-3. Run: `npm run create-admin admin yourpassword`
+3. Run: `npm run create-admin <username> <password>`
+
+For example:
+```bash
+npm run create-admin admin mySecurePassword123
+```
+
+### Method B: Using Supabase SQL Editor
+
+1. Go to your Supabase project dashboard
+2. Navigate to **SQL Editor**
+3. Run this SQL (replace with your desired username and password hash):
+
+```sql
+-- First, generate a password hash using bcrypt (you can use an online bcrypt generator)
+-- Then insert the admin user:
+INSERT INTO admin_users (username, passwordHash) 
+VALUES ('admin', '$2a$10$YourGeneratedHashHere');
+```
+
+**Note:** After creating your first admin user, you can use the **Admin User Management** interface in the dashboard (`/admin/users`) to create additional admin users securely.
 
 ## Step 8: Verify Deployment
 
