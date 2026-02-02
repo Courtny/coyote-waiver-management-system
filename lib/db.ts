@@ -75,25 +75,22 @@ export async function initDatabase() {
     `);
   } catch (error: any) {
     // If tables/indexes already exist, that's fine - ignore those errors
-    if (error instanceof Error) {
-      const errorMessage = error.message || '';
-      const errorCode = error.code || '';
-      
-      // PostgreSQL errors for existing objects
-      if (
-        errorMessage.includes('already exists') ||
-        errorCode === '42P07' || // duplicate_table
-        errorCode === '42710' || // duplicate_object
-        errorCode === '23505' || // unique_violation (for sequences/indexes)
-        errorMessage.includes('duplicate key')
-      ) {
-        // These are expected - tables/indexes already exist
-        return;
-      }
-      
-      console.error('Error initializing database:', error);
-      throw error;
+    const errorMessage = error?.message || '';
+    const errorCode = (error as any)?.code || '';
+    
+    // PostgreSQL errors for existing objects
+    if (
+      errorMessage.includes('already exists') ||
+      errorCode === '42P07' || // duplicate_table
+      errorCode === '42710' || // duplicate_object
+      errorCode === '23505' || // unique_violation (for sequences/indexes)
+      errorMessage.includes('duplicate key')
+    ) {
+      // These are expected - tables/indexes already exist
+      return;
     }
+    
+    console.error('Error initializing database:', error);
     throw error;
   }
 }
