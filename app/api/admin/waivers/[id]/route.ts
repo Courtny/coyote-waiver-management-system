@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { pool } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(
@@ -33,8 +33,8 @@ export async function GET(
     }
 
     // Fetch single waiver by ID
-    const result = await sql`
-      SELECT 
+    const result = await pool.query(
+      `SELECT 
         id,
         firstName,
         lastName,
@@ -53,8 +53,9 @@ export async function GET(
         ipAddress,
         userAgent
       FROM waivers
-      WHERE id = ${waiverId}
-    `;
+      WHERE id = $1`,
+      [waiverId]
+    );
 
     if (result.rows.length === 0) {
       return NextResponse.json(

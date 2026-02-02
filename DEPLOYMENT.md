@@ -113,27 +113,39 @@ Test the following:
 
 ## Important Notes
 
-### Database Setup (Vercel Postgres)
+### Database Setup (Supabase)
 
-**Current Setup**: The application uses Vercel Postgres for persistent data storage.
+**Current Setup**: The application uses Supabase (PostgreSQL) for persistent data storage.
 
-**To set up Vercel Postgres:**
+**To set up Supabase:**
 
-1. Go to your Vercel project dashboard
-2. Navigate to the **Storage** tab
-3. Click **Create Database** and select **Postgres**
-4. Choose a name for your database (e.g., "waivers-db")
-5. Select a region closest to your users
-6. Vercel will automatically:
-   - Create the database
-   - Add the `POSTGRES_URL` environment variable to your project
-   - Configure connection pooling
+1. **Create Supabase Project:**
+   - Go to [supabase.com](https://supabase.com) and sign up/log in
+   - Click **New Project**
+   - Choose a name for your project (e.g., "coyote-waivers")
+   - Set a database password (save this securely)
+   - Select a region closest to your users
+   - Click **Create new project**
+
+2. **Get Connection String:**
+   - In your Supabase project dashboard, go to **Settings** → **Database**
+   - Find the **Connection string** section
+   - Copy the **URI** connection string (it looks like: `postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres`)
+
+3. **Add to Vercel:**
+   - Go to your Vercel project dashboard
+   - Navigate to **Settings** → **Environment Variables**
+   - Add a new variable:
+     - **Name**: `DATABASE_URL` (or `POSTGRES_URL`)
+     - **Value**: Paste your Supabase connection string
+     - **Environment**: Production, Preview, Development (select all)
+   - Click **Save**
 
 **Environment Variables:**
-- `POSTGRES_URL` - Automatically set by Vercel when you create the Postgres database
+- `DATABASE_URL` or `POSTGRES_URL` - Your Supabase PostgreSQL connection string
 - `JWT_SECRET` - Set this manually for production (use a strong random string)
 
-The database schema will be automatically created on first use when the application runs.
+**Note:** The database schema will be automatically created on first use when the application runs. You can also run the schema manually in Supabase's SQL Editor if needed.
 
 ## Troubleshooting
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { pool } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { WaiverSearchResult } from '@/lib/types';
 
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     const currentYear = new Date().getFullYear();
 
     // Fetch all waivers, sorted by most recent first
-    const result = await sql`
-      SELECT 
+    const result = await pool.query(
+      `SELECT 
         id,
         firstName,
         lastName,
@@ -36,13 +36,14 @@ export async function GET(request: NextRequest) {
         waiverYear,
         minorNames,
         CASE 
-          WHEN waiverYear = ${currentYear} THEN 1 
+          WHEN waiverYear = $1 THEN 1 
           ELSE 0 
         END as hasCurrentYearWaiver
       FROM waivers
       ORDER BY signatureDate DESC
-      LIMIT 200
-    `;
+      LIMIT 200`,
+      [currentYear]
+    );
 
     const results = result.rows as WaiverSearchResult[];
 

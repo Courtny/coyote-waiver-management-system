@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { pool } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { WaiverSearchResult } from '@/lib/types';
 
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     const currentYear = new Date().getFullYear();
     const searchTerm = `%${query.trim()}%`;
 
-    const result = await sql`
-      SELECT 
+    const result = await pool.query(
+      `SELECT 
         id,
         firstName,
         lastName,
@@ -46,18 +46,19 @@ export async function GET(request: NextRequest) {
         waiverYear,
         minorNames,
         CASE 
-          WHEN waiverYear = ${currentYear} THEN 1 
+          WHEN waiverYear = $1 THEN 1 
           ELSE 0 
         END as hasCurrentYearWaiver
       FROM waivers
       WHERE 
-        firstName LIKE ${searchTerm} OR 
-        lastName LIKE ${searchTerm} OR
-        (firstName || ' ' || lastName) LIKE ${searchTerm} OR
-        minorNames LIKE ${searchTerm}
+        firstName LIKE $2 OR 
+        lastName LIKE $2 OR
+        (firstName || ' ' || lastName) LIKE $2 OR
+        minorNames LIKE $2
       ORDER BY waiverYear DESC, signatureDate DESC
-      LIMIT 50
-    `;
+      LIMIT 50`,
+      [currentYear, searchTerm]
+    );
 
     const results = result.rows as WaiverSearchResult[];
 

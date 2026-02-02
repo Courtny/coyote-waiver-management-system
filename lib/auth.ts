@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sql } from './db';
+import { pool } from './db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret-key-in-production';
 
@@ -26,22 +26,24 @@ export function verifyToken(token: string): { username: string } | null {
 
 export async function createAdminUser(username: string, password: string): Promise<void> {
   const passwordHash = await hashPassword(password);
-  await sql`
-    INSERT INTO admin_users (username, passwordHash)
-    VALUES (${username}, ${passwordHash})
-  `;
+  await pool.query(
+    'INSERT INTO admin_users (username, passwordHash) VALUES ($1, $2)',
+    [username, passwordHash]
+  );
 }
 
 export async function authenticateAdmin(username: string, password: string): Promise<boolean> {
-  const result = await sql`
-    SELECT passwordHash FROM admin_users WHERE username = ${username}
-  `;
+  const result = await pool.query(
+    'SELECT passwordHash FROM admin_users WHERE username = $1',
+    [username]
+  );
   
   if (result.rows.length === 0) {
     // Try case-insensitive search
-    const caseInsensitiveResult = await sql`
-      SELECT username, passwordHash FROM admin_users WHERE LOWER(username) = LOWER(${username})
-    `;
+    const caseInsensitiveResult = await pool.query(
+      'SELECT username, passwordHash FROM admin_users WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
     
     if (caseInsensitiveResult.rows.length === 0) {
       return false;
