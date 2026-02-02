@@ -27,7 +27,7 @@ export function verifyToken(token: string): { username: string } | null {
 export async function createAdminUser(username: string, password: string): Promise<void> {
   const passwordHash = await hashPassword(password);
   await pool.query(
-    'INSERT INTO admin_users (username, passwordHash) VALUES ($1, $2)',
+    'INSERT INTO admin_users (username, "passwordHash") VALUES ($1, $2)',
     [username, passwordHash]
   );
 }
@@ -41,16 +41,18 @@ export async function authenticateAdmin(username: string, password: string): Pro
     console.log('All users in database:', allUsersResult.rows);
     
     const result = await pool.query(
-      'SELECT passwordHash FROM admin_users WHERE username = $1',
+      'SELECT "passwordHash" FROM admin_users WHERE username = $1',
       [username]
     );
     
     console.log('Exact match query result:', result.rows.length > 0 ? 'Found' : 'Not found');
+    console.log('Result rows:', JSON.stringify(result.rows, null, 2));
+    console.log('First row keys:', result.rows.length > 0 ? Object.keys(result.rows[0]) : 'No rows');
     
     if (result.rows.length === 0) {
       // Try case-insensitive search
       const caseInsensitiveResult = await pool.query(
-        'SELECT username, passwordHash FROM admin_users WHERE LOWER(username) = LOWER($1)',
+        'SELECT username, "passwordHash" FROM admin_users WHERE LOWER(username) = LOWER($1)',
         [username]
       );
       
@@ -61,16 +63,37 @@ export async function authenticateAdmin(username: string, password: string): Pro
         return false;
       }
       
-      const user = caseInsensitiveResult.rows[0] as { username: string, passwordHash: string };
+      const user = caseInsensitiveResult.rows[0] as any;
       console.log('Found user with case-insensitive match:', user.username);
-      const isValid = await verifyPassword(password, user.passwordHash);
+      console.log('Case-insensitive user object:', JSON.stringify(user, null, 2));
+      const passwordHash = user.passwordHash || user.passwordhash;
+      console.log('passwordHash from case-insensitive:', passwordHash);
+      
+      if (!passwordHash) {
+        console.error('passwordHash is missing in case-insensitive result!');
+        return false;
+      }
+      
+      const isValid = await verifyPassword(password, passwordHash);
       console.log('Password verification result:', isValid);
       return isValid;
     }
     
-    const user = result.rows[0] as { passwordHash: string };
+    const user = result.rows[0] as any;
     console.log('Found user with exact match');
-    const isValid = await verifyPassword(password, user.passwordHash);
+    console.log('User object:', JSON.stringify(user, null, 2));
+    console.log('User object keys:', Object.keys(user));
+    // PostgreSQL might return lowercase column names
+    const passwordHash = user.passwordHash || user.passwordhash;
+    console.log('passwordHash value:', passwordHash);
+    console.log('passwordHash type:', typeof passwordHash);
+    
+    if (!passwordHash) {
+      console.error('passwordHash is missing or undefined!');
+      return false;
+    }
+    
+    const isValid = await verifyPassword(password, passwordHash);
     console.log('Password verification result:', isValid);
     return isValid;
   } catch (error) {

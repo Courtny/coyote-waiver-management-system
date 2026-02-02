@@ -58,7 +58,7 @@ export async function initDatabase() {
       CREATE TABLE IF NOT EXISTS admin_users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
-        passwordHash TEXT NOT NULL,
+        "passwordHash" TEXT NOT NULL,
         createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
