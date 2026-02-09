@@ -7,10 +7,10 @@ export default function Home() {
         <div className="max-w-2xl mx-auto text-center">
           <div className="mb-8">
             <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Coyote Waiver
+              Coyote Airsoft and Paintball Waiver
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Sign your waiver or access the admin dashboard
+              Please ign your waiver to get access to the playing field.
             </p>
           </div>
           
