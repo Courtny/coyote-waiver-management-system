@@ -2,15 +2,36 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="mb-8">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Coyote Airsoft and Paintball Waiver
+    <div 
+        className="min-h-screen py-8 px-4 relative flex items-center justify-center"
+        style={{
+          backgroundImage: 'url(/coyote-background.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          zIndex: 1,
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/60" style={{ zIndex: 1 }}></div>
+      
+      <div className="w-auto mx-auto relative z-10">
+        {/* Logo above container */}
+        <div className="flex justify-center items-center mb-6">
+          <img 
+            src="/Coyote-Airsoft-Paintball-Logo.svg" 
+            alt="Coyote Airsoft and Paintball Logo" 
+            className="w-[100px] h-auto drop-shadow-lg"
+          />
+        </div>
+        
+        <div className="card bg-white/95 backdrop-blur-sm shadow-xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Coyote Safety Waiver
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Please ign your waiver to get access to the playing field.
+              Please sign our waiver to get access to the playing field.
             </p>
           </div>
           
@@ -23,7 +44,7 @@ export default function Home() {
             </Link>
             <Link 
               href="/admin/login" 
-              className="btn btn-secondary w-full sm:w-auto min-w-[200px] text-center"
+              // (No className prop for simple hyperlink)
             >
               Admin Login
             </Link>
