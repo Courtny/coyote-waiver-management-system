@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
     }
 
     const currentYear = new Date().getFullYear();
-    const searchTerm = `%${query.trim()}%`;
+    const searchQuery = query.trim();
+    const searchTerm = `%${searchQuery}%`;
 
     const result = await pool.query(
       `SELECT 
@@ -48,16 +49,27 @@ export async function GET(request: NextRequest) {
         CASE 
           WHEN waiveryear = $1 THEN 1 
           ELSE 0 
-        END as "hasCurrentYearWaiver"
+        END as "hasCurrentYearWaiver",
+        GREATEST(
+          COALESCE(similarity(firstname, $2), 0),
+          COALESCE(similarity(lastname, $2), 0),
+          COALESCE(similarity(firstname || ' ' || lastname, $2), 0),
+          COALESCE(similarity(COALESCE(minornames, ''), $2), 0),
+          CASE WHEN yearofbirth ILIKE $3 THEN 1.0 ELSE 0 END
+        ) as relevance
       FROM waivers
       WHERE 
-        firstname LIKE $2 OR 
-        lastname LIKE $2 OR
-        (firstname || ' ' || lastname) LIKE $2 OR
-        minornames LIKE $2
-      ORDER BY waiveryear DESC, signaturedate DESC
+        (similarity(firstname, $2) > 0.3 OR firstname ILIKE $3) OR
+        (similarity(lastname, $2) > 0.3 OR lastname ILIKE $3) OR
+        (similarity(firstname || ' ' || lastname, $2) > 0.3 OR (firstname || ' ' || lastname) ILIKE $3) OR
+        (yearofbirth ILIKE $3) OR
+        (minornames IS NOT NULL AND (similarity(minornames, $2) > 0.3 OR minornames ILIKE $3))
+      ORDER BY 
+        relevance DESC,
+        waiveryear DESC, 
+        signaturedate DESC
       LIMIT 50`,
-      [currentYear, searchTerm]
+      [currentYear, searchQuery, searchTerm]
     );
 
     const results = result.rows as WaiverSearchResult[];

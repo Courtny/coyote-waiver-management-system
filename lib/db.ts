@@ -30,6 +30,22 @@ const pool = new Pool({
 // Initialize database schema
 export async function initDatabase() {
   try {
+    // Enable pg_trgm extension for fuzzy search
+    try {
+      await pool.query('CREATE EXTENSION IF NOT EXISTS pg_trgm;');
+    } catch (error: any) {
+      // Extension might already exist or not be available - that's okay
+      const errorMessage = error?.message || '';
+      const errorCode = (error as any)?.code || '';
+      if (
+        !errorMessage.includes('already exists') &&
+        errorCode !== '42710' && // duplicate_object
+        !errorMessage.includes('permission denied')
+      ) {
+        console.warn('Could not enable pg_trgm extension:', errorMessage);
+      }
+    }
+
     // Waivers table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS waivers (
