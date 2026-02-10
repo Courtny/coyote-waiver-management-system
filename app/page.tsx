@@ -21,7 +21,8 @@ export default function Home() {
           <img 
             src="/Coyote-Airsoft-Paintball-Logo.svg" 
             alt="Coyote Airsoft and Paintball Logo" 
-            className="w-[100px] h-auto drop-shadow-lg"
+            className="h-auto drop-shadow-lg"
+            style={{ width: '200px' }}
           />
         </div>
         
