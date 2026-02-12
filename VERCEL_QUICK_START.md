@@ -1,13 +1,15 @@
 # Vercel Deployment Quick Start
 
-## Generated JWT Secret
+## Generate JWT Secret
 
-Your production JWT secret has been generated:
-```
-43l8ZTEoxyv5XBhnB3R0bnQBCo/jysPdcbuAhj2h1jI=
+Generate a strong random secret for production:
+```bash
+openssl rand -base64 32
 ```
 
 **Save this securely** - you'll need it when configuring Vercel environment variables.
+
+**⚠️ Security Warning**: Never commit JWT secrets to your repository. Always use environment variables.
 
 ## Manual Steps Required
 
@@ -37,7 +39,7 @@ The following steps must be completed in the Vercel dashboard and your domain re
 
 3. **Configure Environment Variables**
    - In Vercel project: Settings → Environment Variables
-   - Add `JWT_SECRET` = `43l8ZTEoxyv5XBhnB3R0bnQBCo/jysPdcbuAhj2h1jI=`
+   - Add `JWT_SECRET` = `<your-generated-secret-from-step-above>`
    - Add `NODE_ENV` = `production`
    - Select all environments (Production, Preview, Development)
 

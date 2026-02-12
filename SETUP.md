@@ -5,17 +5,24 @@
 Create a `.env` file in the project root with the following content:
 
 ```
-JWT_SECRET=mWm8XvjG3Y5+6O1Qy6yklRZtLCVdjBbh8CilaXP36k4=
+JWT_SECRET=your-strong-random-secret-key-here
 NODE_ENV=development
 ```
 
-You can create this file by running:
+**Generate a secure JWT secret:**
 ```bash
-echo "JWT_SECRET=mWm8XvjG3Y5+6O1Qy6yklRZtLCVdjBbh8CilaXP36k4=" > .env
+openssl rand -base64 32
+```
+
+You can create the `.env` file by running:
+```bash
+echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
 echo "NODE_ENV=development" >> .env
 ```
 
-Or manually create the file and paste the content above.
+Or manually create the file and paste the content above, replacing `your-strong-random-secret-key-here` with your generated secret.
+
+**⚠️ Security Warning**: Never commit the `.env` file or JWT secrets to your repository.
 
 ## Step 2: Create Admin User
 

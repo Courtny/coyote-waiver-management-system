@@ -17,18 +17,28 @@
 
 ### 1. Create .env File
 
-The `.env` file is protected and needs to be created manually. Run:
+The `.env` file is protected and needs to be created manually. Generate a secure JWT secret first:
 
 ```bash
-echo "JWT_SECRET=mWm8XvjG3Y5+6O1Qy6yklRZtLCVdjBbh8CilaXP36k4=" > .env
+openssl rand -base64 32
+```
+
+Then create the `.env` file:
+
+```bash
+echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
 echo "NODE_ENV=development" >> .env
 ```
 
 Or manually create `.env` in the project root with:
 ```
-JWT_SECRET=mWm8XvjG3Y5+6O1Qy6yklRZtLCVdjBbh8CilaXP36k4=
+JWT_SECRET=your-strong-random-secret-key-here
 NODE_ENV=development
 ```
+
+Replace `your-strong-random-secret-key-here` with your generated secret.
+
+**⚠️ Security Warning**: Never commit the `.env` file or JWT secrets to your repository.
 
 ### 2. Create Admin User
 
