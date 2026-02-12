@@ -11,6 +11,8 @@ interface TypeaheadOption {
   id: number;
   primary: string;
   secondary?: string;
+  minorNames?: string;
+  hasMatchingMinors?: boolean;
   data: WaiverSearchResult;
 }
 
@@ -148,12 +150,20 @@ export default function AdminDashboard() {
           const results: WaiverSearchResult[] = data.suggestions || [];
 
           if (mounted) {
-            const formatted: TypeaheadOption[] = results.map((result) => ({
-              id: result.id,
-              primary: `${result.firstName} ${result.lastName}`,
-              secondary: result.yearOfBirth ? `Born ${result.yearOfBirth}` : undefined,
-              data: result,
-            }));
+            const queryLower = searchQuery.trim().toLowerCase();
+            const formatted: TypeaheadOption[] = results.map((result) => {
+              const hasMatchingMinors = result.minorNames && 
+                result.minorNames.toLowerCase().includes(queryLower);
+              
+              return {
+                id: result.id,
+                primary: `${result.firstName} ${result.lastName}`,
+                secondary: result.yearOfBirth ? `Born ${result.yearOfBirth}` : undefined,
+                minorNames: result.minorNames || undefined,
+                hasMatchingMinors: hasMatchingMinors || false,
+                data: result,
+              };
+            });
             setTypeaheadSuggestions(formatted);
             setIsLoadingSuggestions(false);
           }
@@ -327,6 +337,16 @@ export default function AdminDashboard() {
                       {suggestion.secondary && (
                         <div className="text-sm text-gray-500 mt-1">
                           {suggestion.secondary}
+                        </div>
+                      )}
+                      {suggestion.hasMatchingMinors && suggestion.minorNames && (
+                        <div className="text-sm text-gray-600 mt-1">
+                          <span className="font-semibold">Minors: </span>
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: highlightMatch(suggestion.minorNames, searchQuery.trim()),
+                            }}
+                          />
                         </div>
                       )}
                     </div>
