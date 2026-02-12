@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
-import { Search, LogOut, CheckCircle, XCircle, Users } from 'lucide-react';
+import { Search, LogOut, CheckCircle, XCircle, Users, Loader2 } from 'lucide-react';
+import { highlightMatch } from '@/lib/typeahead-utils';
+
+interface TypeaheadOption {
+  id: number;
+  primary: string;
+  secondary?: string;
+  data: WaiverSearchResult;
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -16,6 +24,12 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [typeaheadSuggestions, setTypeaheadSuggestions] = useState<TypeaheadOption[]>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const preventBlurRef = useRef(false);
 
   const loadAllWaivers = useCallback(async () => {
     setIsLoadingAll(true);
@@ -59,10 +73,8 @@ export default function AdminDashboard() {
     checkAuth();
   }, [router, loadAllWaivers]);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (searchQuery.trim().length < 2) {
+  const performSearch = useCallback(async (query: string) => {
+    if (query.trim().length < 2) {
       setError('Search query must be at least 2 characters');
       return;
     }
@@ -72,7 +84,7 @@ export default function AdminDashboard() {
     setIsSearchMode(true);
 
     try {
-      const response = await fetch(`/api/admin/search?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/api/admin/search?q=${encodeURIComponent(query.trim())}`);
       
       if (response.status === 401) {
         router.push('/admin/login');
@@ -91,6 +103,11 @@ export default function AdminDashboard() {
     } finally {
       setIsLoading(false);
     }
+  }, [router]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performSearch(searchQuery);
   };
 
   const clearSearch = () => {
@@ -99,6 +116,67 @@ export default function AdminDashboard() {
     setIsSearchMode(false);
     setError('');
   };
+
+  // Fetch suggestions with debouncing and caching
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2 && !isSearchMode) {
+      const controller = new AbortController();
+      let mounted = true;
+
+      setIsLoadingSuggestions(true);
+      const timer = setTimeout(async () => {
+        try {
+          const response = await fetch(
+            `/api/admin/search/suggestions?q=${encodeURIComponent(searchQuery.trim())}`,
+            { signal: controller.signal }
+          );
+
+          if (response.status === 401) {
+            router.push('/admin/login');
+            return;
+          }
+
+          if (!response.ok) {
+            if (mounted) {
+              setIsLoadingSuggestions(false);
+              setTypeaheadSuggestions([]);
+            }
+            return;
+          }
+
+          const data = await response.json();
+          const results: WaiverSearchResult[] = data.suggestions || [];
+
+          if (mounted) {
+            const formatted: TypeaheadOption[] = results.map((result) => ({
+              id: result.id,
+              primary: `${result.firstName} ${result.lastName}`,
+              secondary: result.yearOfBirth ? `Born ${result.yearOfBirth}` : undefined,
+              data: result,
+            }));
+            setTypeaheadSuggestions(formatted);
+            setIsLoadingSuggestions(false);
+          }
+        } catch (error: any) {
+          if (error.name !== 'AbortError' && mounted) {
+            setTypeaheadSuggestions([]);
+            setIsLoadingSuggestions(false);
+          }
+        }
+      }, 200);
+
+      return () => {
+        mounted = false;
+        clearTimeout(timer);
+        controller.abort();
+        setIsLoadingSuggestions(false);
+      };
+    } else {
+      setTypeaheadSuggestions([]);
+      setIsLoadingSuggestions(false);
+      setActiveIndex(-1);
+    }
+  }, [searchQuery, isSearchMode, router]);
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -143,15 +221,129 @@ export default function AdminDashboard() {
             <div className="flex-1 relative">
               <Search 
                 size={20} 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" 
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" 
               />
               <input
+                ref={inputRef}
                 type="text"
+                role="combobox"
+                aria-expanded={typeaheadSuggestions.length > 0 && searchQuery.trim().length >= 2}
+                aria-controls="suggestions-list"
+                aria-activedescendant={activeIndex >= 0 ? `suggestion-${activeIndex}` : undefined}
+                aria-autocomplete="list"
                 className="input pl-12"
                 placeholder="Search by player name..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchMode(false);
+                }}
+                onKeyDown={(e) => {
+                  if (typeaheadSuggestions.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setActiveIndex((prev) => 
+                        prev < typeaheadSuggestions.length - 1 ? prev + 1 : prev
+                      );
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setActiveIndex((prev) => (prev > 0 ? prev - 1 : -1));
+                    } else if (e.key === 'Enter' && activeIndex >= 0) {
+                      e.preventDefault();
+                      const selected = typeaheadSuggestions[activeIndex];
+                      const selectedQuery = `${selected.data.firstName} ${selected.data.lastName}`;
+                      setSearchQuery(selectedQuery);
+                      setTypeaheadSuggestions([]);
+                      setActiveIndex(-1);
+                      performSearch(selectedQuery);
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setTypeaheadSuggestions([]);
+                      setActiveIndex(-1);
+                    } else if (e.key === 'Tab' && activeIndex >= 0) {
+                      e.preventDefault();
+                      const selected = typeaheadSuggestions[activeIndex];
+                      const selectedQuery = `${selected.data.firstName} ${selected.data.lastName}`;
+                      setSearchQuery(selectedQuery);
+                      setTypeaheadSuggestions([]);
+                      setActiveIndex(-1);
+                      performSearch(selectedQuery);
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  if (!preventBlurRef.current) {
+                    setTimeout(() => {
+                      setTypeaheadSuggestions([]);
+                      setActiveIndex(-1);
+                    }, 200);
+                  }
+                }}
               />
+              {isLoadingSuggestions && searchQuery.trim().length >= 2 && (
+                <Loader2 
+                  size={16} 
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" 
+                />
+              )}
+              {typeaheadSuggestions.length > 0 && searchQuery.trim().length >= 2 && !isSearchMode && (
+                <div
+                  ref={suggestionsRef}
+                  id="suggestions-list"
+                  role="listbox"
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-auto"
+                >
+                  {typeaheadSuggestions.map((suggestion, index) => (
+                    <div
+                      key={suggestion.id}
+                      id={`suggestion-${index}`}
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      className={`px-4 py-3 cursor-pointer transition-colors ${
+                        index === activeIndex
+                          ? 'bg-blue-50 border-l-4 border-blue-500'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        preventBlurRef.current = true;
+                        const selectedQuery = `${suggestion.data.firstName} ${suggestion.data.lastName}`;
+                        setSearchQuery(selectedQuery);
+                        setTypeaheadSuggestions([]);
+                        setActiveIndex(-1);
+                        performSearch(selectedQuery);
+                        setTimeout(() => {
+                          preventBlurRef.current = false;
+                        }, 100);
+                      }}
+                    >
+                      <div
+                        className="font-medium text-gray-900"
+                        dangerouslySetInnerHTML={{
+                          __html: highlightMatch(suggestion.primary, searchQuery.trim()),
+                        }}
+                      />
+                      {suggestion.secondary && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {suggestion.secondary}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {typeaheadSuggestions.length === 0 && 
+               searchQuery.trim().length >= 2 && 
+               !isLoadingSuggestions && 
+               !isSearchMode && (
+                <div
+                  role="listbox"
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg px-4 py-3 text-gray-500 text-center"
+                >
+                  No results found
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <button
