@@ -1,5 +1,11 @@
 import Link from 'next/link';
 
+export const metadata = {
+  title: 'Coyote Safety Waiver – Sign the Waiver',
+  description:
+    'Please sign our waiver to get access to the playing field. Coyote Airsoft & Paintball.',
+}
+
 export default function Home() {
   return (
     <div 
