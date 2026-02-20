@@ -8,14 +8,19 @@ const libreFranklin = Libre_Franklin({
   display: 'swap',
 })
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+// Base URL for OG/canonical: prefer explicit site URL, then Vercel deployment URL, else localhost
+const explicitSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+const baseUrl = explicitSiteUrl || vercelUrl
+const siteUrl = baseUrl
+
 const defaultTitle = 'Coyote Waiver'
 const defaultDescription =
   'A secure and real-time digital waiver signing and management system for businesses.'
-const ogImageUrl = siteUrl ? `${siteUrl}/og.png` : '/og.png'
+const ogImageUrl = baseUrl ? `${baseUrl}/og.png` : '/og.png'
 
 export const metadata: Metadata = {
-  metadataBase: siteUrl ? new URL(siteUrl) : new URL('http://localhost:3000'),
+  metadataBase: baseUrl ? new URL(baseUrl) : new URL('http://localhost:3000'),
   title: defaultTitle,
   description: defaultDescription,
   openGraph: {
