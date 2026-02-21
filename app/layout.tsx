@@ -16,7 +16,7 @@ const siteUrl = baseUrl
 
 const defaultTitle = 'Coyote Waiver'
 const defaultDescription =
-  'A secure and real-time digital waiver signing and management system for businesses.'
+  'Sign the online waiver for Coyote Airsoft & Paintball. Required to get access to the playing field.'
 const ogImageUrl = baseUrl ? `${baseUrl}/og.png` : '/og.png'
 
 export const metadata: Metadata = {
