@@ -9,8 +9,8 @@ const libreFranklin = Libre_Franklin({
 })
 
 // Base URL for OG/canonical: prefer explicit site URL, then Vercel deployment URL, else localhost
-const explicitSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+const explicitSiteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}`.replace(/\/$/, '') : ''
 const baseUrl = explicitSiteUrl || vercelUrl
 const siteUrl = baseUrl
 

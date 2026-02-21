@@ -39,7 +39,27 @@ Save this value securely - you'll need it in Step 3.
    - Value: `production`
    - Environment: Production, Preview, Development (select all)
 
+   **NEXT_PUBLIC_SITE_URL** (for Open Graph and social sharing)
+   - Value: `https://waiver.coyoteforce.com` (your production URL)
+   - Environment: Production (or all)
+   - Required so shared links use the correct OG image URL and canonical domain
+
+   **DISCORD_WAIVER_WEBHOOK_URL** (optional – Discord notifications)
+   - Value: Your Discord Incoming Webhook URL (Server Settings → Integrations → Webhooks → New Webhook)
+   - Environment: Production (or all)
+   - When set, posts a message to Discord on each new waiver with the signer's name and a "See it here" link
+   - Waiver submission succeeds even if the webhook is missing or Discord fails
+
 3. Click **"Save"**
+
+## Step 3b: Deployment Protection (Required for OG Image)
+
+For social sharing (Facebook, Twitter, LinkedIn) to show the correct preview image, crawlers must be able to fetch `/og.png` without authentication.
+
+1. Go to **Settings** → **Deployment Protection**
+2. For **Production**, set to **None** (or **Disabled**)
+3. You can keep Standard Protection for **Preview** deployments (PR/branch previews)
+4. Your admin area remains protected by the app's JWT login
 
 ## Step 4: Add Custom Domain
 
@@ -149,6 +169,8 @@ Test the following:
 **Environment Variables:**
 - `DATABASE_URL` or `POSTGRES_URL` - Your Supabase PostgreSQL connection string
 - `JWT_SECRET` - Set this manually for production (use a strong random string)
+- `NEXT_PUBLIC_SITE_URL` - Production URL (e.g. `https://waiver.coyoteforce.com`) for Open Graph metadata and canonical URLs
+- `DISCORD_WAIVER_WEBHOOK_URL` - Optional. Discord Incoming Webhook URL for new-waiver notifications
 
 **Note:** The database schema will be automatically created on first use when the application runs. You can also run the schema manually in Supabase's SQL Editor if needed.
 
@@ -163,6 +185,11 @@ Test the following:
 - Check environment variables are set correctly
 - Verify Node.js version compatibility (Vercel uses Node.js 18.x by default)
 - Check build logs in Vercel dashboard for specific errors
+
+### Open Graph Image Shows "Invalid Image Content Type"
+- Set **NEXT_PUBLIC_SITE_URL** to your production URL (e.g. `https://waiver.coyoteforce.com`)
+- Set **Deployment Protection** for Production to **None** so crawlers can fetch `/og.png`
+- Redeploy and re-run the [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
 
 ### Admin Login Fails
 - Verify admin user was created successfully

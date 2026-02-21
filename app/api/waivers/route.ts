@@ -24,14 +24,15 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     const signatureDate = new Date().toISOString();
-    
-    await pool.query(
+
+    const result = await pool.query(
       `INSERT INTO waivers (
         firstname, lastname, email, yearofbirth, phone,
         emergencycontactphone, safetyrulesinitial, medicalconsentinitial,
         photorelease, minornames, signature, signaturedate, 
         ipaddress, useragent, waiveryear
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING id`,
       [
         body.firstName,
         body.lastName,
@@ -50,6 +51,23 @@ export async function POST(request: NextRequest) {
         currentYear
       ]
     );
+
+    const newId = result.rows[0]?.id as number | undefined;
+    const webhookUrl = process.env.DISCORD_WAIVER_WEBHOOK_URL;
+    const baseUrl = (
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+    ).replace(/\/$/, '');
+
+    if (webhookUrl && baseUrl && newId != null) {
+      const waiverUrl = `${baseUrl}/admin/waivers/${newId}`;
+      const message = `New waiver from **${body.firstName} ${body.lastName}**. [See it here](${waiverUrl})`;
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message }),
+      }).catch((err) => console.error('Discord webhook:', err));
+    }
 
     return NextResponse.json({ 
       success: true,
