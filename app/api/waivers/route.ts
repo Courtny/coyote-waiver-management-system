@@ -62,11 +62,16 @@ export async function POST(request: NextRequest) {
     if (webhookUrl && baseUrl && newId != null) {
       const waiverUrl = `${baseUrl}/admin/waivers/${newId}`;
       const message = `New waiver from **${body.firstName} ${body.lastName}**. [See it here](${waiverUrl})`;
-      fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: message }),
-      }).catch((err) => console.error('Discord webhook:', err));
+      try {
+        const r = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: message }),
+        });
+        if (!r.ok) console.error('Discord webhook non-OK:', r.status);
+      } catch (err) {
+        console.error('Discord webhook:', err);
+      }
     }
 
     return NextResponse.json({ 
