@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Libre_Franklin } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const libreFranklin = Libre_Franklin({
@@ -47,7 +48,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={libreFranklin.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }
