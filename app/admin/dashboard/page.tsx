@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
-import { Search, LogOut, CheckCircle, XCircle, Users, Loader2 } from 'lucide-react';
+import { Search, LogOut, CheckCircle, XCircle, Users, Loader2, Download } from 'lucide-react';
 import { highlightMatch } from '@/lib/typeahead-utils';
 
 interface TypeaheadOption {
@@ -208,7 +208,23 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Admin Dashboard</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
+            <a
+              href="/api/admin/waivers/export-emails"
+              className="btn btn-secondary flex items-center gap-2"
+              title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
+            >
+              <Download size={18} />
+              Export emails ({currentYear})
+            </a>
+            <a
+              href="/api/admin/waivers/export-emails?all=1"
+              className="btn btn-secondary flex items-center gap-2"
+              title="Distinct emails across all waiver years"
+            >
+              <Download size={18} />
+              Export all years
+            </a>
             <Link
               href="/admin/users"
               className="btn btn-secondary flex items-center gap-2"
