@@ -50,8 +50,8 @@ Save this value securely - you'll need it in Step 3.
    - When set, posts a message to Discord on each new waiver with the signer's name and a "See it here" link
    - Waiver submission succeeds even if the webhook is missing or Discord fails
 
-   **WEBFLOW_API_TOKEN** and **WEBFLOW_SITE_ID** (optional – Check-In purchase history)
-   - Required for `/admin/checkin` to show Webflow ecommerce orders. Without them, waiver lookup still works; purchases stay empty.
+   **WEBFLOW_API_TOKEN** and **WEBFLOW_SITE_ID** (optional – Check-In and ticket rollups)
+   - Required for `/admin/checkin` and `/admin/tickets` to show Webflow ecommerce orders. Without them, waiver lookup still works; purchases and ticket counts stay empty.
    - Token: Webflow workspace → **Workspace settings** → **Integrations** / **API access** → generate token with **`ecommerce:read`** (and **`sites:read`** if available).
    - Site ID: site **Site settings → General**, or `GET https://api.webflow.com/v2/sites` with the token and copy the site `id`.
    - Environment: add to **Production** and **Preview** (and Development if you use Vercel dev) so branch previews work.

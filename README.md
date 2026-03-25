@@ -6,7 +6,8 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 
 - **Waiver Submission**: Personal info, emergency contact, electronic signature, photo release, minor tracking
 - **Admin Dashboard**: Fuzzy search with typeahead, waiver status validation, admin user management
-- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached); **Event counts** tab lists tickets per product/SKU and a drill-down table by customer
+- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached)
+- **Ticket counts** (`/admin/tickets`): Tickets sold per product/SKU and a drill-down table by customer (same Webflow cache)
 - **Security**: JWT authentication, bcrypt password hashing
 
 ## Tech Stack
@@ -85,11 +86,11 @@ Open [http://localhost:3000](http://localhost:3000)
 
 **Players**: Navigate to home page → "Sign Waiver" → Fill form → Submit
 
-**Admins**: Navigate to home page → "Admin Login" → Search waivers, **Check-In** (gate), or manage users
+**Admins**: Navigate to home page → "Admin Login" → Search waivers, **Check-In** (gate), **Ticket counts**, or manage users
 
 ### Check-In / Webflow (optional)
 
-For purchase history on **Check-In**, you need a Webflow Data API token and your **Site ID**. Copy variable names from [`.env.example`](./.env.example).
+For purchase history on **Check-In** and rollups on **Ticket counts**, you need a Webflow Data API token and your **Site ID**. Copy variable names from [`.env.example`](./.env.example).
 
 **1. API token (`WEBFLOW_API_TOKEN`)**
 

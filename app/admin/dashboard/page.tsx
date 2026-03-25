@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
-import { Search, LogOut, CheckCircle, XCircle, Users, Loader2, Download } from 'lucide-react';
+import { Search, LogOut, CheckCircle, XCircle, Users, Loader2, Download, Ticket } from 'lucide-react';
 import { highlightMatch } from '@/lib/typeahead-utils';
 
 interface TypeaheadOption {
@@ -231,6 +231,13 @@ export default function AdminDashboard() {
             >
               <CheckCircle size={18} />
               Check-In
+            </Link>
+            <Link
+              href="/admin/tickets"
+              className="btn btn-secondary flex items-center gap-2"
+            >
+              <Ticket size={18} />
+              Ticket counts
             </Link>
             <Link
               href="/admin/users"

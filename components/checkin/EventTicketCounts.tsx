@@ -38,7 +38,7 @@ function formatOrderDate(iso: string | null): string {
   });
 }
 
-export function AttendanceTab({ webflowConfigured }: { webflowConfigured: boolean }) {
+export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: boolean }) {
   const router = useRouter();
   const [events, setEvents] = useState<EventAttendanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
