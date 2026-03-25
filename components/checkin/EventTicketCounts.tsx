@@ -209,7 +209,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-gray-600 text-sm">
-          Ticket totals from cached Webflow orders, grouped by product (event). Click a card for the full list by SKU.
+          Ticket totals from cached Webflow orders, grouped by product (event). Open a card for orders and SKU breakdown.
         </p>
         <button
           type="button"
@@ -260,16 +260,6 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
                   </span>
                   <span className="font-medium text-gray-800">{ev.totalTickets} tickets</span>
                 </div>
-                <ul className="text-sm border-t border-gray-100 pt-3 space-y-1.5">
-                  {ev.skuBreakdown.map((row) => (
-                    <li key={row.sku} className="flex justify-between gap-2 text-gray-700">
-                      <span className="truncate" title={row.displayName}>
-                        {row.displayName}
-                      </span>
-                      <span className="font-mono text-gray-500 shrink-0">×{row.quantity}</span>
-                    </li>
-                  ))}
-                </ul>
               </button>
             </li>
           ))}
