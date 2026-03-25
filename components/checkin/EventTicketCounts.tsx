@@ -8,6 +8,7 @@ type SkuBreakdownRow = {
   sku: string;
   displayName: string;
   quantity: number;
+  imageUrl?: string;
 };
 
 type EventAttendanceSummary = {
@@ -16,6 +17,7 @@ type EventAttendanceSummary = {
   orderCount: number;
   totalTickets: number;
   skuBreakdown: SkuBreakdownRow[];
+  imageUrl?: string;
 };
 
 type EventAttendanceLine = {
@@ -26,6 +28,7 @@ type EventAttendanceLine = {
   sku: string;
   displayName: string;
   quantity: number;
+  imageUrl?: string;
 };
 
 function formatOrderDate(iso: string | null): string {
@@ -165,6 +168,9 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 text-left text-gray-600">
+                  <th className="px-4 py-3 font-semibold w-14" scope="col">
+                    <span className="sr-only">Image</span>
+                  </th>
                   <th className="px-4 py-3 font-semibold">SKU / ticket</th>
                   <th className="px-4 py-3 font-semibold">Customer</th>
                   <th className="px-4 py-3 font-semibold">Email</th>
@@ -176,13 +182,27 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
               <tbody>
                 {detail.lines.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                       No line items for this product in cached orders.
                     </td>
                   </tr>
                 ) : (
                   detail.lines.map((row, i) => (
                     <tr key={`${row.orderId}-${row.sku}-${i}`} className="border-b border-gray-100 hover:bg-gray-50/80">
+                      <td className="px-4 py-3 align-middle">
+                        {row.imageUrl ? (
+                          <img
+                            src={row.imageUrl}
+                            alt={row.displayName}
+                            className="h-10 w-10 rounded-md object-cover border border-gray-200 bg-white"
+                          />
+                        ) : (
+                          <div
+                            className="h-10 w-10 rounded-md border border-dashed border-gray-200 bg-gray-50"
+                            aria-hidden
+                          />
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{row.displayName}</div>
                         {row.sku && (
@@ -243,22 +263,36 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
               <button
                 type="button"
                 onClick={() => void openEvent(ev)}
-                className="w-full text-left card py-5 px-6 hover:border-blue-300 hover:shadow-md transition flex flex-col gap-3 group"
+                className="w-full text-left card py-5 px-6 hover:border-blue-300 hover:shadow-md transition flex flex-row gap-4 items-start group"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-gray-900 text-lg pr-2">{ev.title}</h3>
-                  <ChevronRight
-                    className="text-gray-400 group-hover:text-blue-600 shrink-0 mt-1"
-                    size={20}
+                {ev.imageUrl ? (
+                  <img
+                    src={ev.imageUrl}
+                    alt={ev.title}
+                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg object-cover border border-gray-200 bg-white"
+                  />
+                ) : (
+                  <div
+                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg border border-dashed border-gray-200 bg-gray-50"
                     aria-hidden
                   />
-                </div>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <span className="inline-flex items-center gap-1">
-                    <Users size={16} className="text-gray-400" />
-                    {ev.orderCount} order{ev.orderCount !== 1 ? 's' : ''}
-                  </span>
-                  <span className="font-medium text-gray-800">{ev.totalTickets} tickets</span>
+                )}
+                <div className="flex flex-col gap-3 min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-gray-900 text-lg pr-2">{ev.title}</h3>
+                    <ChevronRight
+                      className="text-gray-400 group-hover:text-blue-600 shrink-0 mt-1"
+                      size={20}
+                      aria-hidden
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <span className="inline-flex items-center gap-1">
+                      <Users size={16} className="text-gray-400" />
+                      {ev.orderCount} order{ev.orderCount !== 1 ? 's' : ''}
+                    </span>
+                    <span className="font-medium text-gray-800">{ev.totalTickets} tickets</span>
+                  </div>
                 </div>
               </button>
             </li>

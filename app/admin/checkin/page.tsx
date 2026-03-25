@@ -43,6 +43,7 @@ type PurchaseLine = {
   displayName: string;
   quantity: number;
   partySize: number;
+  imageUrl?: string;
 };
 
 type PurchaseOrder = {
@@ -436,9 +437,26 @@ export default function AdminCheckInPage() {
                       </p>
                       <ul className="space-y-2">
                         {po.lines.map((line, idx) => (
-                          <li key={`${line.sku}-${idx}`} className="flex flex-wrap justify-between gap-2">
-                            <span className="font-medium text-gray-900">{line.displayName}</span>
-                            <span className="text-gray-600 text-sm">
+                          <li
+                            key={`${line.sku}-${idx}`}
+                            className="flex flex-wrap items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              {line.imageUrl ? (
+                                <img
+                                  src={line.imageUrl}
+                                  alt={line.displayName}
+                                  className="h-12 w-12 shrink-0 rounded-md object-cover border border-gray-200 bg-white"
+                                />
+                              ) : (
+                                <div
+                                  className="h-12 w-12 shrink-0 rounded-md border border-dashed border-gray-200 bg-gray-100"
+                                  aria-hidden
+                                />
+                              )}
+                              <span className="font-medium text-gray-900">{line.displayName}</span>
+                            </div>
+                            <span className="text-gray-600 text-sm shrink-0">
                               Qty {line.quantity}
                               {line.partySize > 1 && (
                                 <span className="ml-2 text-amber-800">(party {line.partySize})</span>

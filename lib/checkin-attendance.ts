@@ -5,6 +5,7 @@ export type SkuBreakdownRow = {
   sku: string;
   displayName: string;
   quantity: number;
+  imageUrl?: string;
 };
 
 export type EventAttendanceSummary = {
@@ -13,6 +14,7 @@ export type EventAttendanceSummary = {
   orderCount: number;
   totalTickets: number;
   skuBreakdown: SkuBreakdownRow[];
+  imageUrl?: string;
 };
 
 export type EventAttendanceLine = {
@@ -23,6 +25,7 @@ export type EventAttendanceLine = {
   sku: string;
   displayName: string;
   quantity: number;
+  imageUrl?: string;
 };
 
 function displayForSku(sku: string, displayName: string, skuDisplay: Record<string, string>): string {
@@ -60,12 +63,16 @@ export function resolveEventTitle(
   return eventTitle(pid, Array.from(variantIds), productName, events);
 }
 
+type SkuAgg = { displayName: string; qty: number; imageUrl?: string };
+
 type Agg = {
   productId: string;
   productName: string;
   variantIds: Set<string>;
-  skuMap: Map<string, { displayName: string; qty: number }>;
+  skuMap: Map<string, SkuAgg>;
   orderIds: Set<string>;
+  /** First variant image seen for this product (event card thumbnail). */
+  imageUrl?: string;
 };
 
 export function buildAttendanceSummaries(
@@ -97,6 +104,9 @@ export function buildAttendanceSummaries(
       if (line.productName && line.productName.length > (agg.productName?.length || 0)) {
         agg.productName = line.productName;
       }
+      if (line.imageUrl && !agg.imageUrl) {
+        agg.imageUrl = line.imageUrl;
+      }
 
       const label = displayForSku(line.sku, line.displayName, skuDisplay);
       const key = line.sku || line.variantId || label;
@@ -104,8 +114,15 @@ export function buildAttendanceSummaries(
       const addQty = line.quantity;
       if (prev) {
         prev.qty += addQty;
+        if (!prev.imageUrl && line.imageUrl) {
+          prev.imageUrl = line.imageUrl;
+        }
       } else {
-        agg.skuMap.set(key, { displayName: label, qty: addQty });
+        agg.skuMap.set(key, {
+          displayName: label,
+          qty: addQty,
+          ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
+        });
       }
     }
     for (const pid of productsTouched) {
@@ -121,6 +138,7 @@ export function buildAttendanceSummaries(
         sku: skuKey,
         displayName: v.displayName,
         quantity: v.qty,
+        ...(v.imageUrl ? { imageUrl: v.imageUrl } : {}),
       }))
       .sort((a, b) => a.sku.localeCompare(b.sku));
 
@@ -132,6 +150,7 @@ export function buildAttendanceSummaries(
       orderCount: agg.orderIds.size,
       totalTickets,
       skuBreakdown,
+      ...(agg.imageUrl ? { imageUrl: agg.imageUrl } : {}),
     });
   }
 
@@ -161,6 +180,7 @@ export function buildEventAttendanceLines(
         sku: line.sku || line.variantId || line.displayName,
         displayName: displayForSku(line.sku, line.displayName, skuDisplay),
         quantity: line.quantity,
+        ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
       });
     }
   }

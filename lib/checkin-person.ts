@@ -34,6 +34,7 @@ export type CheckinPurchaseLine = {
   productId: string;
   variantId: string;
   partySize: number;
+  imageUrl?: string;
 };
 
 export type CheckinPurchaseOrder = {
@@ -98,6 +99,7 @@ function enrichLines(
       productId: L.productId,
       variantId: L.variantId,
       partySize,
+      ...(L.imageUrl ? { imageUrl: L.imageUrl } : {}),
     });
   }
   return out;

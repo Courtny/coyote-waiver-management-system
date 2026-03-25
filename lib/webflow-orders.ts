@@ -9,6 +9,7 @@ export type WebflowPurchasedItem = {
   variantId?: string;
   variantName?: string;
   variantSKU?: string;
+  variantImage?: { url?: string; file?: { variants?: unknown[] } };
 };
 
 export type WebflowOrderRaw = {
@@ -26,6 +27,7 @@ export type NormalizedLineItem = {
   sku: string;
   displayName: string;
   quantity: number;
+  imageUrl?: string;
 };
 
 export type NormalizedOrder = {
@@ -54,6 +56,22 @@ function num(v: unknown, fallback = 0): number {
   return fallback;
 }
 
+/** Resolve hosted image URL from Webflow order line `variantImage`. */
+export function variantImageUrl(variantImage: unknown): string | undefined {
+  const img = asRecord(variantImage);
+  if (!img) return undefined;
+  const direct = str(img.url);
+  if (direct) return direct;
+  const file = asRecord(img.file);
+  if (!file) return undefined;
+  const variants = Array.isArray(file.variants) ? file.variants : [];
+  for (const v of variants) {
+    const u = str(asRecord(v)?.url);
+    if (u) return u;
+  }
+  return undefined;
+}
+
 export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
   const o = asRecord(raw);
   if (!o) return null;
@@ -74,6 +92,7 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
     const productName = str(row.productName);
     const displayName = [productName, variantName].filter(Boolean).join(' — ') || sku || 'Item';
     const qty = Math.max(1, Math.round(num(row.count, 1)));
+    const imageUrl = variantImageUrl(row.variantImage);
     lines.push({
       productId: str(row.productId),
       productName: productName || displayName,
@@ -81,6 +100,7 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
       sku,
       displayName,
       quantity: qty,
+      ...(imageUrl ? { imageUrl } : {}),
     });
   }
 
