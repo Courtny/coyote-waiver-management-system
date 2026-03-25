@@ -13,6 +13,8 @@ import {
   ShieldAlert,
   XCircle,
 } from 'lucide-react';
+import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
+import { WaiverSearchResult } from '@/lib/types';
 
 type Meta = {
   currentYear: number;
@@ -178,6 +180,16 @@ export default function AdminCheckInPage() {
     void runPersonSearch();
   };
 
+  const handleWaiverPickFromTypeahead = useCallback(
+    (w: WaiverSearchResult) => {
+      const full = `${w.firstName} ${w.lastName}`.trim();
+      setName(full);
+      setEmail(w.email);
+      void runPersonSearch({ name: full, email: w.email, phone });
+    },
+    [runPersonSearch, phone]
+  );
+
   const checkPartyMember = async (index: number) => {
     const q = partyNames[index]?.trim();
     if (!q || q.length < 2) return;
@@ -279,13 +291,12 @@ export default function AdminCheckInPage() {
               <label className="label" htmlFor="name">
                 Name
               </label>
-              <input
+              <PlayerNameTypeahead
                 id="name"
-                className="input"
-                placeholder="Full name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="name"
+                onChange={setName}
+                onPick={handleWaiverPickFromTypeahead}
+                placeholder="Start typing — fuzzy match from waivers"
               />
             </div>
             <div>
