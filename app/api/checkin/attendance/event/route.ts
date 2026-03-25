@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { buildEventAttendanceLines, resolveEventTitle } from '@/lib/checkin-attendance';
+import { requireAdmin } from '@/lib/checkin-api';
+import { getCachedWebflowOrders } from '@/lib/checkin-cache';
+import { getCheckinConfig } from '@/lib/checkin-config';
+import { WebflowOrdersError } from '@/lib/webflow-orders';
+
+export async function GET(request: NextRequest) {
+  const denied = requireAdmin(request);
+  if (denied) return denied;
+
+  const productId = request.nextUrl.searchParams.get('product_id')?.trim();
+  if (!productId) {
+    return NextResponse.json({ error: 'Missing product_id' }, { status: 400 });
+  }
+
+  const { events, skuDisplay } = getCheckinConfig();
+
+  try {
+    const { orders, stale, error } = await getCachedWebflowOrders();
+    const lines = buildEventAttendanceLines(orders, productId, skuDisplay);
+    const title = resolveEventTitle(productId, orders, events);
+
+    return NextResponse.json({
+      productId,
+      title,
+      lines,
+      ordersStale: stale,
+      webflowError: error?.message,
+    });
+  } catch (e) {
+    if (e instanceof WebflowOrdersError) {
+      return NextResponse.json(
+        { error: e.message, code: 'webflow', lines: [] },
+        { status: e.status >= 400 && e.status < 600 ? e.status : 502 }
+      );
+    }
+    console.error('checkin/attendance/event:', e);
+    return NextResponse.json({ error: 'Failed to load event lines' }, { status: 500 });
+  }
+}

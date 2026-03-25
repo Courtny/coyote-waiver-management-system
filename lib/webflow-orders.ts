@@ -21,6 +21,7 @@ export type WebflowOrderRaw = {
 
 export type NormalizedLineItem = {
   productId: string;
+  productName: string;
   variantId: string;
   sku: string;
   displayName: string;
@@ -75,6 +76,7 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
     const qty = Math.max(1, Math.round(num(row.count, 1)));
     lines.push({
       productId: str(row.productId),
+      productName: productName || displayName,
       variantId: str(row.variantId),
       sku,
       displayName,

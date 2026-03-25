@@ -6,7 +6,7 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 
 - **Waiver Submission**: Personal info, emergency contact, electronic signature, photo release, minor tracking
 - **Admin Dashboard**: Fuzzy search with typeahead, waiver status validation, admin user management
-- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached), optional gate product filter
+- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached); **Event counts** tab lists tickets per product/SKU and a drill-down table by customer
 - **Security**: JWT authentication, bcrypt password hashing
 
 ## Tech Stack

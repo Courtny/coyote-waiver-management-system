@@ -13,8 +13,11 @@ import {
   ShieldAlert,
   XCircle,
 } from 'lucide-react';
+import { AttendanceTab } from '@/components/checkin/AttendanceTab';
 import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
 import { WaiverSearchResult } from '@/lib/types';
+
+type CheckInTab = 'lookup' | 'attendance';
 
 type Meta = {
   currentYear: number;
@@ -85,6 +88,8 @@ export default function AdminCheckInPage() {
 
   const [partyNames, setPartyNames] = useState<string[]>([]);
   const [partyStatus, setPartyStatus] = useState<Record<number, WaiverPayload | 'loading' | null>>({});
+
+  const [activeTab, setActiveTab] = useState<CheckInTab>('lookup');
 
   useEffect(() => {
     const run = async () => {
@@ -236,8 +241,8 @@ export default function AdminCheckInPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <Link
               href="/admin/dashboard"
@@ -248,7 +253,7 @@ export default function AdminCheckInPage() {
             </Link>
             <h1 className="text-3xl font-bold text-gray-900">Check-In</h1>
             <p className="text-gray-600 mt-1">
-              Ask for their name, email, or phone — then confirm waiver and tickets.
+              Gate lookup and ticket counts from Webflow (cached).
             </p>
           </div>
           <button type="button" onClick={handleLogout} className="btn btn-secondary flex items-center gap-2 shrink-0">
@@ -257,7 +262,36 @@ export default function AdminCheckInPage() {
           </button>
         </div>
 
-        {meta && !meta.webflowConfigured && (
+        <div
+          className="flex gap-1 p-1 mb-6 bg-gray-200/80 rounded-xl max-w-md"
+          role="tablist"
+          aria-label="Check-in sections"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'lookup'}
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+              activeTab === 'lookup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => setActiveTab('lookup')}
+          >
+            Player lookup
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'attendance'}
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+              activeTab === 'attendance' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => setActiveTab('attendance')}
+          >
+            Event counts
+          </button>
+        </div>
+
+        {meta && !meta.webflowConfigured && activeTab === 'lookup' && (
           <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
             Webflow orders are not configured — purchase history will stay empty until{' '}
             <code className="bg-amber-100 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
@@ -265,6 +299,14 @@ export default function AdminCheckInPage() {
           </div>
         )}
 
+        {activeTab === 'attendance' && (
+          <div className="card mb-6" role="tabpanel">
+            <AttendanceTab webflowConfigured={Boolean(meta?.webflowConfigured)} />
+          </div>
+        )}
+
+        {activeTab === 'lookup' && (
+        <div className="max-w-3xl">
         <div className="card mb-6">
           <form onSubmit={onSubmit} className="space-y-4">
             {meta?.events && meta.events.length > 0 && (
@@ -510,6 +552,8 @@ export default function AdminCheckInPage() {
               </div>
             )}
           </>
+        )}
+        </div>
         )}
       </div>
     </div>
