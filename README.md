@@ -6,6 +6,7 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 
 - **Waiver Submission**: Personal info, emergency contact, electronic signature, photo release, minor tracking
 - **Admin Dashboard**: Fuzzy search with typeahead, waiver status validation, admin user management
+- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached), optional gate product filter
 - **Security**: JWT authentication, bcrypt password hashing
 
 ## Tech Stack
@@ -76,7 +77,22 @@ Open [http://localhost:3000](http://localhost:3000)
 
 **Players**: Navigate to home page → "Sign Waiver" → Fill form → Submit
 
-**Admins**: Navigate to home page → "Admin Login" → Search waivers → Manage users
+**Admins**: Navigate to home page → "Admin Login" → Search waivers, **Check-In** (gate), or manage users
+
+### Check-In / Webflow (optional)
+
+For purchase history on the check-in page, add a Webflow Data API token with **ecommerce:read** and your site ID:
+
+| Variable | Description |
+| -------- | ----------- |
+| `WEBFLOW_API_TOKEN` | Bearer token from Webflow workspace |
+| `WEBFLOW_SITE_ID` | Site ID (orders are listed per site) |
+| `CHECKIN_SKU_PARTY_SIZE` | Optional JSON map, e.g. `{"my-sku-slug":3}` for party-size hints |
+| `CHECKIN_SKU_DISPLAY` | Optional JSON map `sku → short label` for cleaner line names |
+| `CHECKIN_EVENTS_JSON` | Optional JSON array: `[{"id":"<productOrVariantId>","label":"Saturday game"}]` for gate filter dropdown |
+| `CHECKIN_CACHE_TTL_MS` | Optional cache TTL (default 7 minutes) |
+
+If Webflow env vars are omitted, waiver lookup still works; purchases will be empty.
 
 ## Deployment
 

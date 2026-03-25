@@ -226,6 +226,13 @@ export default function AdminDashboard() {
               Export all years
             </a>
             <Link
+              href="/admin/checkin"
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <CheckCircle size={18} />
+              Check-In
+            </Link>
+            <Link
               href="/admin/users"
               className="btn btn-secondary flex items-center gap-2"
             >
