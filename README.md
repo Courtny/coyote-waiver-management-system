@@ -31,16 +31,24 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 npm install
 ```
 
-3. Create `.env` file:
+3. Create `.env` or `.env.local` (see [`.env.example`](./.env.example) for all keys):
 ```bash
-echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
-echo "NODE_ENV=development" >> .env
+cp .env.example .env.local
+# Edit .env.local: set JWT_SECRET, DATABASE_URL, and optionally Webflow vars below.
 ```
 
-For production, add your Supabase connection string:
+Minimal local setup:
+```bash
+echo "JWT_SECRET=$(openssl rand -base64 32)" > .env.local
+echo "NODE_ENV=development" >> .env.local
+```
+
+Add your database URL:
 ```
 DATABASE_URL=your-supabase-connection-string
 ```
+
+**Webflow (check-in purchases):** add `WEBFLOW_API_TOKEN` and `WEBFLOW_SITE_ID` to the same file. See [Check-In / Webflow](#check-in--webflow-optional) for where to get them.
 
 4. Create admin user:
 ```bash
@@ -81,12 +89,33 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ### Check-In / Webflow (optional)
 
-For purchase history on the check-in page, add a Webflow Data API token with **ecommerce:read** and your site ID:
+For purchase history on **Check-In**, you need a Webflow Data API token and your **Site ID**. Copy variable names from [`.env.example`](./.env.example).
+
+**1. API token (`WEBFLOW_API_TOKEN`)**
+
+1. Open [Webflow Dashboard](https://webflow.com/dashboard) and select your **workspace** (not just a site).
+2. Go to **Workspace settings** → **Integrations** → **API access** (wording may be **Developers** / **API** depending on plan).
+3. **Generate API token** (or create a **Site token** scoped to the ecommerce site, if you use that flow).
+4. Enable scopes that allow **reading ecommerce / orders** — at minimum **`ecommerce:read`** (and **`sites:read`** if the token wizard offers it, so you can list sites).
+
+**2. Site ID (`WEBFLOW_SITE_ID`)**
+
+- In Webflow: open the site → **Site settings** → **General** — many projects show a **Site ID** there, **or**
+- With your token, run:
+  ```bash
+  curl -s -H "Authorization: Bearer YOUR_TOKEN" https://api.webflow.com/v2/sites
+  ```
+  Use the `id` of the site that has your store.
+
+**3. Add to environment**
+
+- **Local:** put both values in `.env` or `.env.local` (see [`.env.example`](./.env.example)), restart `npm run dev`.
+- **Vercel:** **Project → Settings → Environment Variables** — add the same keys for **Preview** and **Production**, then redeploy.
 
 | Variable | Description |
 | -------- | ----------- |
-| `WEBFLOW_API_TOKEN` | Bearer token from Webflow workspace |
-| `WEBFLOW_SITE_ID` | Site ID (orders are listed per site) |
+| `WEBFLOW_API_TOKEN` | Bearer token (see above) |
+| `WEBFLOW_SITE_ID` | Site UUID from settings or `GET /v2/sites` |
 | `CHECKIN_SKU_PARTY_SIZE` | Optional JSON map, e.g. `{"my-sku-slug":3}` for party-size hints |
 | `CHECKIN_SKU_DISPLAY` | Optional JSON map `sku → short label` for cleaner line names |
 | `CHECKIN_EVENTS_JSON` | Optional JSON array: `[{"id":"<productOrVariantId>","label":"Saturday game"}]` for gate filter dropdown |
