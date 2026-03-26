@@ -78,6 +78,7 @@ export default function AdminCheckInPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [eventId, setEventId] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -150,6 +151,7 @@ export default function AdminCheckInPage() {
             name: override?.name ?? name,
             email: override?.email ?? email,
             phone: override?.phone ?? phone,
+            order_id: orderId.trim() || undefined,
             event_id: eventId || undefined,
           }),
         });
@@ -169,13 +171,13 @@ export default function AdminCheckInPage() {
         setLoading(false);
       }
     },
-    [name, email, phone, eventId, router]
+    [name, email, phone, orderId, eventId, router]
   );
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() && !email.trim() && !phone.trim()) {
-      setError('Enter a name, email, or phone');
+    if (!name.trim() && !email.trim() && !phone.trim() && !orderId.trim()) {
+      setError('Enter a name, email, phone, or Webflow order ID');
       return;
     }
     void runPersonSearch();
@@ -186,6 +188,7 @@ export default function AdminCheckInPage() {
       const full = `${w.firstName} ${w.lastName}`.trim();
       setName(full);
       setEmail(w.email);
+      setOrderId('');
       void runPersonSearch({ name: full, email: w.email, phone });
     },
     [runPersonSearch, phone]
@@ -220,6 +223,7 @@ export default function AdminCheckInPage() {
     setName('');
     setEmail('');
     setPhone('');
+    setOrderId('');
     setResult(null);
     setError('');
     setPartyStatus({});
@@ -325,6 +329,26 @@ export default function AdminCheckInPage() {
                 autoComplete="tel"
               />
             </div>
+            <div>
+              <label className="label" htmlFor="order-id">
+                Webflow order ID
+              </label>
+              <input
+                id="order-id"
+                type="text"
+                className="input font-mono text-sm"
+                placeholder="Paste order ID from Webflow / receipt"
+                value={orderId}
+                onChange={(e) => setOrderId(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Optional. Loads that order from the cached Webflow list and matches the waiver using the buyer on the
+                order (name, email, or phone above override buyer fields when filled). IDs are matched
+                case-insensitively.
+              </p>
+            </div>
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <div className="flex flex-wrap gap-3">
               <button type="submit" disabled={loading} className="btn btn-primary flex items-center gap-2">
@@ -361,6 +385,7 @@ export default function AdminCheckInPage() {
                         onClick={() => {
                           setEmail(c.email);
                           setName(`${c.firstName} ${c.lastName}`.trim());
+                          setOrderId('');
                           void runPersonSearch({
                             email: c.email,
                             name: `${c.firstName} ${c.lastName}`.trim(),

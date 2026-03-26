@@ -48,6 +48,8 @@ export type ResolvePersonInput = {
   email?: string;
   phone?: string;
   eventId?: string;
+  /** Webflow order id — resolved against cached orders only */
+  orderId?: string;
 };
 
 function tokenSet(name: string): Set<string> {
@@ -245,9 +247,56 @@ export async function resolveCheckinPerson(
   input: ResolvePersonInput,
   orders: NormalizedOrder[],
   currentYear: number
-): Promise<{ waiver: CheckinWaiverResult; purchases: CheckinPurchaseOrder[]; ordersStale?: boolean }> {
+): Promise<{
+  waiver: CheckinWaiverResult;
+  purchases: CheckinPurchaseOrder[];
+  orderNotFound?: boolean;
+}> {
   const { skuPartySize, skuDisplay } = getCheckinConfig();
   const eventId = input.eventId?.trim() || undefined;
+  const orderIdTrim = input.orderId?.trim();
+
+  if (orderIdTrim) {
+    const matchedOrder = orders.find(
+      (o) => o.orderId.toLowerCase() === orderIdTrim.toLowerCase()
+    );
+    if (!matchedOrder) {
+      return {
+        waiver: { status: 'not_found', confidence: 'not_found', ambiguous: false },
+        purchases: [],
+        orderNotFound: true,
+      };
+    }
+
+    const merged: ResolvePersonInput = {
+      eventId: input.eventId,
+      email:
+        input.email?.trim() ||
+        (matchedOrder.customerEmail ? matchedOrder.customerEmail : undefined),
+      name:
+        input.name?.trim() ||
+        (matchedOrder.customerFullName?.trim() ||
+          matchedOrder.billingAddressee?.trim() ||
+          undefined),
+      phone: input.phone?.trim() || undefined,
+    };
+
+    const waiver = await resolveWaiver(merged, currentYear);
+
+    const lines = enrichLines(matchedOrder.lines, eventId, skuPartySize, skuDisplay);
+    const purchaseOrders: CheckinPurchaseOrder[] =
+      lines.length === 0
+        ? []
+        : [
+            {
+              orderId: matchedOrder.orderId,
+              orderedAt: matchedOrder.acceptedOn,
+              lines,
+            },
+          ];
+
+    return { waiver, purchases: purchaseOrders };
+  }
 
   const waiver = await resolveWaiver(input, currentYear);
 
