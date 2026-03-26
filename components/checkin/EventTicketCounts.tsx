@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ChevronRight, Loader2, RefreshCw, Users } from 'lucide-react';
 
@@ -40,6 +40,210 @@ function formatOrderDate(iso: string | null): string {
     timeStyle: 'short',
   });
 }
+
+type EventDetailPanelProps = {
+  detail: { productId: string; title: string; lines: EventAttendanceLine[] };
+  detailLoading: boolean;
+  ordersStale: boolean;
+  webflowError?: string;
+  onBack: () => void;
+};
+
+function EventDetailPanel({
+  detail,
+  detailLoading,
+  ordersStale,
+  webflowError,
+  onBack,
+}: EventDetailPanelProps) {
+  const [includedSkus, setIncludedSkus] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (detailLoading) return;
+    setIncludedSkus(new Set(detail.lines.map((l) => l.sku || '')));
+  }, [detail.productId, detailLoading, detail.lines]);
+
+  const skuOptions = useMemo(() => {
+    if (!detail.lines.length) return [] as { skuKey: string; displayName: string }[];
+    const map = new Map<string, string>();
+    for (const row of detail.lines) {
+      const k = row.sku || '';
+      if (!map.has(k)) map.set(k, row.displayName);
+    }
+    return Array.from(map.entries())
+      .map(([skuKey, displayName]) => ({ skuKey, displayName }))
+      .sort((a, b) =>
+        a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' })
+      );
+  }, [detail.lines]);
+
+  const filteredLines = useMemo(
+    () => detail.lines.filter((row) => includedSkus.has(row.sku || '')),
+    [detail.lines, includedSkus]
+  );
+
+  const ticketSum = filteredLines.reduce((s, r) => s + r.quantity, 0);
+
+  const toggleSku = (skuKey: string) => {
+    setIncludedSkus((prev) => {
+      const next = new Set(prev);
+      if (next.has(skuKey)) next.delete(skuKey);
+      else next.add(skuKey);
+      return next;
+    });
+  };
+
+  const selectAllSkus = () => {
+    setIncludedSkus(new Set(skuOptions.map((o) => o.skuKey)));
+  };
+
+  const clearAllSkus = () => {
+    setIncludedSkus(new Set());
+  };
+
+  return (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+      >
+        <ArrowLeft size={16} />
+        Back to event list
+      </button>
+
+      {ordersStale && webflowError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+          Showing cached orders; refresh failed: {webflowError}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-xl font-bold text-gray-900">{detail.title}</h2>
+        <p className="text-sm text-gray-600">
+          {filteredLines.length} line{filteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
+          {filteredLines.length !== detail.lines.length ? (
+            <span className="text-gray-500"> (of {detail.lines.length} lines)</span>
+          ) : null}
+        </p>
+      </div>
+
+      {detailLoading ? (
+        <div className="flex justify-center py-16 text-gray-500">
+          <Loader2 className="animate-spin" size={32} />
+        </div>
+      ) : (
+        <>
+          {skuOptions.length > 1 ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                <p className="text-sm font-medium text-gray-800">Filter by ticket / SKU</p>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={selectAllSkus}>
+                    Select all
+                  </button>
+                  <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={clearAllSkus}>
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                {skuOptions.map((opt) => (
+                  <li key={opt.skuKey || '__empty__'}>
+                    <label className="inline-flex items-start gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 rounded border-gray-300"
+                        checked={includedSkus.has(opt.skuKey)}
+                        onChange={() => toggleSku(opt.skuKey)}
+                      />
+                      <span>
+                        <span className="font-medium text-gray-900">{opt.displayName}</span>
+                        {opt.skuKey ? (
+                          <span className="block text-xs text-gray-500 font-mono mt-0.5">{opt.skuKey}</span>
+                        ) : (
+                          <span className="block text-xs text-gray-500 mt-0.5">(no SKU)</span>
+                        )}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold w-14" scope="col">
+                    <span className="sr-only">Image</span>
+                  </th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Customer</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold text-right">Qty</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Order</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.lines.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
+                      No line items for this product in cached orders.
+                    </td>
+                  </tr>
+                ) : includedSkus.size === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
+                      No tickets / SKUs selected — choose at least one filter above or use Select all.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLines.map((row, i) => (
+                    <tr
+                      key={`${row.orderId}-${row.sku}-${i}`}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 align-middle">
+                        {row.imageUrl ? (
+                          <img
+                            src={row.imageUrl}
+                            alt={row.displayName}
+                            className="h-10 w-10 rounded-md object-cover border border-gray-200 bg-white"
+                          />
+                        ) : (
+                          <div
+                            className="h-10 w-10 rounded-md border border-dashed border-gray-200 bg-gray-50"
+                            aria-hidden
+                          />
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-medium">
+                        <div className="text-gray-900">{row.displayName}</div>
+                        {row.sku && (
+                          <div className="text-xs text-gray-500 font-mono mt-0.5">{row.sku}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{row.customerName}</td>
+                      <td className="px-4 py-3 text-gray-600 break-all max-w-[200px]">{row.customerEmail}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 font-medium">{row.quantity}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{row.orderId}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatOrderDate(row.orderedAt)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
 
 export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: boolean }) {
   const router = useRouter();
@@ -135,96 +339,13 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
 
   if (detail) {
     return (
-      <div className="space-y-4">
-        <button
-          type="button"
-          onClick={closeDetail}
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-        >
-          <ArrowLeft size={16} />
-          Back to event list
-        </button>
-
-        {ordersStale && webflowError && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
-            Showing cached orders; refresh failed: {webflowError}
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-xl font-bold text-gray-900">{detail.title}</h2>
-          <p className="text-sm text-gray-600">
-            {detail.lines.length} line{detail.lines.length !== 1 ? 's' : ''} ·{' '}
-            {detail.lines.reduce((s, r) => s + r.quantity, 0)} tickets
-          </p>
-        </div>
-
-        {detailLoading ? (
-          <div className="flex justify-center py-16 text-gray-500">
-            <Loader2 className="animate-spin" size={32} />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold w-14" scope="col">
-                    <span className="sr-only">Image</span>
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Customer</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold text-right">Qty</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Order</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.lines.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
-                      No line items for this product in cached orders.
-                    </td>
-                  </tr>
-                ) : (
-                  detail.lines.map((row, i) => (
-                    <tr
-                      key={`${row.orderId}-${row.sku}-${i}`}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-4 py-3 align-middle">
-                        {row.imageUrl ? (
-                          <img
-                            src={row.imageUrl}
-                            alt={row.displayName}
-                            className="h-10 w-10 rounded-md object-cover border border-gray-200 bg-white"
-                          />
-                        ) : (
-                          <div
-                            className="h-10 w-10 rounded-md border border-dashed border-gray-200 bg-gray-50"
-                            aria-hidden
-                          />
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        <div className="text-gray-900">{row.displayName}</div>
-                        {row.sku && (
-                          <div className="text-xs text-gray-500 font-mono mt-0.5">{row.sku}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{row.customerName}</td>
-                      <td className="px-4 py-3 text-gray-600 break-all max-w-[200px]">{row.customerEmail}</td>
-                      <td className="px-4 py-3 text-right text-gray-600 font-medium">{row.quantity}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{row.orderId}</td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatOrderDate(row.orderedAt)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <EventDetailPanel
+        detail={detail}
+        detailLoading={detailLoading}
+        ordersStale={ordersStale}
+        webflowError={webflowError}
+        onBack={closeDetail}
+      />
     );
   }
 
