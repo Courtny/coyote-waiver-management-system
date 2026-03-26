@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   CheckCircle2,
   Loader2,
   LogOut,
@@ -13,6 +12,7 @@ import {
   ShieldAlert,
   XCircle,
 } from 'lucide-react';
+import AdminPageShell from '@/components/admin/AdminPageShell';
 import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
 import { WaiverSearchResult } from '@/lib/types';
 
@@ -236,31 +236,25 @@ export default function AdminCheckInPage() {
   const waiver = result?.waiver;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div>
-            <Link
-              href="/admin/dashboard"
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium mb-2"
-            >
-              <ArrowLeft size={16} />
-              Back to dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Check-In</h1>
-            <p className="text-gray-600 mt-1">
-              Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
-              <Link href="/admin/tickets" className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap">
-                View ticket counts by event →
-              </Link>
-            </p>
-          </div>
-          <button type="button" onClick={handleLogout} className="btn btn-secondary flex items-center gap-2 shrink-0">
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-
+    <AdminPageShell
+      title="Check-In"
+      backHref="/admin/dashboard"
+      actions={
+        <button type="button" onClick={handleLogout} className="btn btn-secondary flex items-center gap-2 shrink-0">
+          <LogOut size={18} />
+          Logout
+        </button>
+      }
+      description={
+        <>
+          Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
+          <Link href="/admin/tickets" className="font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap">
+            View ticket counts by event →
+          </Link>
+        </>
+      }
+    >
+        <div className="mx-auto max-w-3xl">
         {meta && !meta.webflowConfigured && (
           <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
             Webflow orders are not configured — purchase history will stay empty until{' '}
@@ -532,7 +526,7 @@ export default function AdminCheckInPage() {
             )}
           </>
         )}
-      </div>
-    </div>
+        </div>
+    </AdminPageShell>
   );
 }

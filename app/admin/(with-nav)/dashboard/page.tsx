@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
 import { Search, CheckCircle, XCircle, Loader2, Download } from 'lucide-react';
 import { highlightMatch } from '@/lib/typeahead-utils';
+import AdminPageShell from '@/components/admin/AdminPageShell';
 
 interface TypeaheadOption {
   id: number;
@@ -199,30 +200,29 @@ export default function AdminDashboard() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <a
-              href="/api/admin/waivers/export-emails"
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-              title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
-            >
-              <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
-              Export {currentYear}
-            </a>
-            <a
-              href="/api/admin/waivers/export-emails?all=1"
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-              title="Distinct emails across all waiver years"
-            >
-              <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
-              Export all years
-            </a>
-          </div>
-        </div>
-
+    <AdminPageShell
+      title="Admin Dashboard"
+      actions={
+        <>
+          <a
+            href="/api/admin/waivers/export-emails"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
+          >
+            <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
+            Export {currentYear}
+          </a>
+          <a
+            href="/api/admin/waivers/export-emails?all=1"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            title="Distinct emails across all waiver years"
+          >
+            <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
+            Export all years
+          </a>
+        </>
+      }
+    >
         <div className="card mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -556,7 +556,6 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </AdminPageShell>
   );
 }
