@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   CheckCircle2,
@@ -177,7 +178,7 @@ export default function AdminCheckInPage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() && !email.trim() && !phone.trim() && !orderId.trim()) {
-      setError('Enter a name, email, phone, or Webflow order ID');
+      setError('Enter a name, email, phone, or order ID');
       return;
     }
     void runPersonSearch();
@@ -331,7 +332,7 @@ export default function AdminCheckInPage() {
             </div>
             <div>
               <label className="label" htmlFor="order-id">
-                Webflow order ID
+                Order ID
               </label>
               <input
                 id="order-id"
@@ -343,11 +344,31 @@ export default function AdminCheckInPage() {
                 autoComplete="off"
                 spellCheck={false}
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Optional. Loads that order from the cached Webflow list and matches the waiver using the buyer on the
-                order (name, email, or phone above override buyer fields when filled). IDs are matched
-                case-insensitively.
-              </p>
+              <div className="mt-2 space-y-2 text-xs text-gray-500">
+                <p>
+                  Optional. Loads that order from the cached Webflow list and matches the waiver using the buyer on the
+                  order (name, email, or phone above override buyer fields when filled). IDs are matched
+                  case-insensitively.
+                </p>
+                <details className="group [&_summary::-webkit-details-marker]:hidden [&_summary]:list-none">
+                  <summary className="inline cursor-pointer text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800">
+                    Where to find the order number on the customer&apos;s email
+                  </summary>
+                  <figure className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <Image
+                      src="/images/order-id-email-sample.png"
+                      alt="Sample confirmation email: Order Number appears below the line item, highlighted before the order date"
+                      width={1024}
+                      height={826}
+                      className="h-auto w-full max-w-lg"
+                      sizes="(max-width: 768px) 100vw, 28rem"
+                    />
+                    <figcaption className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-center text-gray-600">
+                      Example confirmation email
+                    </figcaption>
+                  </figure>
+                </details>
+              </div>
             </div>
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <div className="flex flex-wrap gap-3">
