@@ -164,31 +164,34 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
             <Loader2 className="animate-spin" size={32} />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 text-left text-gray-600">
-                  <th className="px-4 py-3 font-semibold w-14" scope="col">
+                <tr className="border-b-2 border-gray-200">
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold w-14" scope="col">
                     <span className="sr-only">Image</span>
                   </th>
-                  <th className="px-4 py-3 font-semibold">SKU / ticket</th>
-                  <th className="px-4 py-3 font-semibold">Customer</th>
-                  <th className="px-4 py-3 font-semibold">Email</th>
-                  <th className="px-4 py-3 font-semibold text-right">Qty</th>
-                  <th className="px-4 py-3 font-semibold">Order</th>
-                  <th className="px-4 py-3 font-semibold">Date</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Customer</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold text-right">Qty</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Order</th>
+                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {detail.lines.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
                       No line items for this product in cached orders.
                     </td>
                   </tr>
                 ) : (
                   detail.lines.map((row, i) => (
-                    <tr key={`${row.orderId}-${row.sku}-${i}`} className="border-b border-gray-100 hover:bg-gray-50/80">
+                    <tr
+                      key={`${row.orderId}-${row.sku}-${i}`}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-4 py-3 align-middle">
                         {row.imageUrl ? (
                           <img
@@ -203,15 +206,15 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{row.displayName}</div>
+                      <td className="px-4 py-3 font-medium">
+                        <div className="text-gray-900">{row.displayName}</div>
                         {row.sku && (
                           <div className="text-xs text-gray-500 font-mono mt-0.5">{row.sku}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-800">{row.customerName}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.customerName}</td>
                       <td className="px-4 py-3 text-gray-600 break-all max-w-[200px]">{row.customerEmail}</td>
-                      <td className="px-4 py-3 text-right font-medium">{row.quantity}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 font-medium">{row.quantity}</td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-600">{row.orderId}</td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatOrderDate(row.orderedAt)}</td>
                     </tr>
