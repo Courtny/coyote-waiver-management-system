@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
+import AdminPageShell from '@/components/admin/AdminPageShell';
 
 interface WaiverDetail {
   id: number;
@@ -93,21 +94,16 @@ export default function WaiverDetailPage() {
 
   if (error || !waiver) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="card">
-            <div className="text-center">
-              <p className="text-red-600 mb-4">{error || 'Waiver not found'}</p>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                className="btn btn-secondary"
-              >
-                Back to Dashboard
-              </button>
-            </div>
+      <AdminPageShell title="Waiver" backHref="/admin/dashboard">
+        <div className="card">
+          <div className="text-center">
+            <p className="mb-4 text-red-600">{error || 'Waiver not found'}</p>
+            <button type="button" onClick={() => router.push('/admin/dashboard')} className="btn btn-secondary">
+              Back to Dashboard
+            </button>
           </div>
         </div>
-      </div>
+      </AdminPageShell>
     );
   }
 
@@ -115,19 +111,28 @@ export default function WaiverDetailPage() {
   const hasCurrentYearWaiver = waiver.waiverYear === currentYear;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <button
-            onClick={() => router.push('/admin/dashboard')}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <ArrowLeft size={18} />
-            Back to Dashboard
-          </button>
+    <AdminPageShell
+      title={`${waiver.firstName} ${waiver.lastName}`}
+      backHref="/admin/dashboard"
+      description={
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {hasCurrentYearWaiver ? (
+            <span className="inline-flex items-center gap-1 font-semibold text-green-600">
+              <CheckCircle size={18} />
+              Valid {currentYear} waiver
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 font-semibold text-red-600">
+              <XCircle size={18} />
+              Expired (year: {waiver.waiverYear})
+            </span>
+          )}
+          <span className="text-gray-500">·</span>
+          <span>{waiver.email}</span>
         </div>
-
-        <div className="card">
+      }
+    >
+        <div className="card max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               C&L Entreprises DBA Coyote Airsoft and Paintball
@@ -135,19 +140,6 @@ export default function WaiverDetailPage() {
             <h2 className="text-xl text-gray-700 mb-4">
               Field Waiver Disclosure and Release
             </h2>
-            <div className="flex items-center justify-center gap-2">
-              {hasCurrentYearWaiver ? (
-                <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
-                  <CheckCircle size={20} />
-                  Valid {currentYear} Waiver
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
-                  <XCircle size={20} />
-                  Expired (Year: {waiver.waiverYear})
-                </span>
-              )}
-            </div>
           </div>
 
           <div className="space-y-8">
@@ -364,7 +356,6 @@ export default function WaiverDetailPage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </AdminPageShell>
   );
 }

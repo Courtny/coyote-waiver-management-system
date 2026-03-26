@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
-import { Search, LogOut, CheckCircle, XCircle, Users, Loader2, Download, Ticket } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Loader2, Download } from 'lucide-react';
 import { highlightMatch } from '@/lib/typeahead-utils';
+import AdminPageShell from '@/components/admin/AdminPageShell';
 
 interface TypeaheadOption {
   id: number;
@@ -188,11 +189,6 @@ export default function AdminDashboard() {
     }
   }, [searchQuery, isSearchMode, router]);
 
-  const handleLogout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    router.push('/admin/login');
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -204,58 +200,29 @@ export default function AdminDashboard() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Admin Dashboard</h1>
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
-            <a
-              href="/api/admin/waivers/export-emails"
-              className="btn btn-secondary flex items-center gap-2"
-              title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
-            >
-              <Download size={18} />
-              Export emails ({currentYear})
-            </a>
-            <a
-              href="/api/admin/waivers/export-emails?all=1"
-              className="btn btn-secondary flex items-center gap-2"
-              title="Distinct emails across all waiver years"
-            >
-              <Download size={18} />
-              Export all years
-            </a>
-            <Link
-              href="/admin/checkin"
-              className="btn btn-primary flex items-center gap-2"
-            >
-              <CheckCircle size={18} />
-              Check-In
-            </Link>
-            <Link
-              href="/admin/tickets"
-              className="btn btn-secondary flex items-center gap-2"
-            >
-              <Ticket size={18} />
-              Ticket counts
-            </Link>
-            <Link
-              href="/admin/users"
-              className="btn btn-secondary flex items-center gap-2"
-            >
-              <Users size={18} />
-              Manage Users
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="btn btn-secondary flex items-center gap-2"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
-          </div>
-        </div>
-
+    <AdminPageShell
+      title="Admin Dashboard"
+      actions={
+        <>
+          <a
+            href="/api/admin/waivers/export-emails"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
+          >
+            <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
+            Export {currentYear}
+          </a>
+          <a
+            href="/api/admin/waivers/export-emails?all=1"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            title="Distinct emails across all waiver years"
+          >
+            <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
+            Export all years
+          </a>
+        </>
+      }
+    >
         <div className="card mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -589,7 +556,6 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </AdminPageShell>
   );
 }

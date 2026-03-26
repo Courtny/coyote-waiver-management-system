@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   CheckCircle2,
   Loader2,
   LogOut,
@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   XCircle,
 } from 'lucide-react';
+import AdminPageShell from '@/components/admin/AdminPageShell';
 import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
 import { WaiverSearchResult } from '@/lib/types';
 
@@ -78,6 +79,7 @@ export default function AdminCheckInPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [orderId, setOrderId] = useState('');
   const [eventId, setEventId] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -150,6 +152,7 @@ export default function AdminCheckInPage() {
             name: override?.name ?? name,
             email: override?.email ?? email,
             phone: override?.phone ?? phone,
+            order_id: orderId.trim() || undefined,
             event_id: eventId || undefined,
           }),
         });
@@ -169,13 +172,13 @@ export default function AdminCheckInPage() {
         setLoading(false);
       }
     },
-    [name, email, phone, eventId, router]
+    [name, email, phone, orderId, eventId, router]
   );
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() && !email.trim() && !phone.trim()) {
-      setError('Enter a name, email, or phone');
+    if (!name.trim() && !email.trim() && !phone.trim() && !orderId.trim()) {
+      setError('Enter a name, email, phone, or order ID');
       return;
     }
     void runPersonSearch();
@@ -186,6 +189,7 @@ export default function AdminCheckInPage() {
       const full = `${w.firstName} ${w.lastName}`.trim();
       setName(full);
       setEmail(w.email);
+      setOrderId('');
       void runPersonSearch({ name: full, email: w.email, phone });
     },
     [runPersonSearch, phone]
@@ -220,6 +224,7 @@ export default function AdminCheckInPage() {
     setName('');
     setEmail('');
     setPhone('');
+    setOrderId('');
     setResult(null);
     setError('');
     setPartyStatus({});
@@ -236,31 +241,25 @@ export default function AdminCheckInPage() {
   const waiver = result?.waiver;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div>
-            <Link
-              href="/admin/dashboard"
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium mb-2"
-            >
-              <ArrowLeft size={16} />
-              Back to dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Check-In</h1>
-            <p className="text-gray-600 mt-1">
-              Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
-              <Link href="/admin/tickets" className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap">
-                View ticket counts by event →
-              </Link>
-            </p>
-          </div>
-          <button type="button" onClick={handleLogout} className="btn btn-secondary flex items-center gap-2 shrink-0">
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-
+    <AdminPageShell
+      title="Check-In"
+      backHref="/admin/dashboard"
+      actions={
+        <button type="button" onClick={handleLogout} className="btn btn-secondary flex items-center gap-2 shrink-0">
+          <LogOut size={18} />
+          Logout
+        </button>
+      }
+      description={
+        <>
+          Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
+          <Link href="/admin/tickets" className="font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap">
+            View ticket counts by event →
+          </Link>
+        </>
+      }
+    >
+        <div className="mx-auto max-w-3xl">
         {meta && !meta.webflowConfigured && (
           <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
             Webflow orders are not configured — purchase history will stay empty until{' '}
@@ -331,6 +330,46 @@ export default function AdminCheckInPage() {
                 autoComplete="tel"
               />
             </div>
+            <div>
+              <label className="label" htmlFor="order-id">
+                Order ID
+              </label>
+              <input
+                id="order-id"
+                type="text"
+                className="input font-mono text-sm"
+                placeholder="Order number from confirmation email"
+                value={orderId}
+                onChange={(e) => setOrderId(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <div className="mt-2 space-y-2 text-xs text-gray-500">
+                <p>
+                  Optional. Loads that order from the cached Webflow list and matches the waiver using the buyer on the
+                  order (name, email, or phone above override buyer fields when filled). IDs are matched
+                  case-insensitively.
+                </p>
+                <details className="group [&_summary::-webkit-details-marker]:hidden [&_summary]:list-none">
+                  <summary className="inline cursor-pointer text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800">
+                    Where to find the order number on the customer&apos;s email
+                  </summary>
+                  <figure className="mx-auto mt-3 w-full max-w-lg overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <Image
+                      src="/images/order-id-email-sample.png"
+                      alt="Sample confirmation email: Order Number appears below the line item, highlighted before the order date"
+                      width={1024}
+                      height={826}
+                      className="h-auto w-full"
+                      sizes="(max-width: 768px) 100vw, 28rem"
+                    />
+                    <figcaption className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-center text-gray-600">
+                      Example confirmation email
+                    </figcaption>
+                  </figure>
+                </details>
+              </div>
+            </div>
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <div className="flex flex-wrap gap-3">
               <button type="submit" disabled={loading} className="btn btn-primary flex items-center gap-2">
@@ -367,6 +406,7 @@ export default function AdminCheckInPage() {
                         onClick={() => {
                           setEmail(c.email);
                           setName(`${c.firstName} ${c.lastName}`.trim());
+                          setOrderId('');
                           void runPersonSearch({
                             email: c.email,
                             name: `${c.firstName} ${c.lastName}`.trim(),
@@ -532,7 +572,7 @@ export default function AdminCheckInPage() {
             )}
           </>
         )}
-      </div>
-    </div>
+        </div>
+    </AdminPageShell>
   );
 }

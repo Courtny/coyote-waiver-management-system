@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Trash2, UserPlus, LogOut } from 'lucide-react';
+import { Trash2, UserPlus } from 'lucide-react';
+import AdminPageShell from '@/components/admin/AdminPageShell';
 
 interface AdminUser {
   id: number;
@@ -154,11 +154,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    router.push('/admin/login');
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -168,29 +163,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <Link
-            href="/admin/dashboard"
-            className="btn btn-secondary flex items-center gap-2 w-fit"
-          >
-            <ArrowLeft size={18} />
-            Back to Dashboard
-          </Link>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Admin User Management</h1>
-          <button
-            onClick={handleLogout}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-
+    <AdminPageShell title="Admin User Management" backHref="/admin/dashboard">
         {error && (
           <div className="card mb-6">
             <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
@@ -326,7 +299,6 @@ export default function AdminUsersPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </AdminPageShell>
   );
 }

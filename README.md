@@ -8,14 +8,17 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 - **Admin Dashboard**: Fuzzy search with typeahead, waiver status validation, admin user management
 - **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached)
 - **Ticket counts** (`/admin/tickets`): Tickets sold per product/SKU and a drill-down table by customer (same Webflow cache)
+- **Variant images**: When Webflow order line items include `variantImage`, thumbnails appear on Check-In purchases and Ticket counts (no extra env vars)
 - **Security**: JWT authentication, bcrypt password hashing
 
 ## Tech Stack
 
-- Next.js 14, TypeScript
-- PostgreSQL (Supabase)
+- Next.js 14, TypeScript, Tailwind CSS
+- PostgreSQL (Supabase), `pg`
 - JWT, bcryptjs
-- Tailwind CSS
+- Webflow Data API v2 (ecommerce orders) via server-side fetch
+- Lucide React (icons), date-fns
+- @vercel/analytics
 
 ## Getting Started
 
@@ -63,19 +66,28 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+For a short local setup walkthrough (JWT, `DATABASE_URL`, admin user), see **[SETUP.md](./SETUP.md)**.
+
 ## Project Structure
 
 ```
 ├── app/
-│   ├── api/              # API routes (waivers, admin)
-│   ├── admin/            # Admin pages (login, dashboard, users, waivers)
+│   ├── api/
+│   │   ├── admin/        # Auth, users, waivers, search, CSV export
+│   │   ├── checkin/      # Meta, lookup, person, attendance summary & event
+│   │   └── waivers/      # Public waiver submission
+│   ├── admin/
+│   │   ├── checkin/      # Gate check-in UI
+│   │   ├── tickets/      # Ticket counts / event rollups
+│   │   └── …             # login, dashboard, users, waiver detail
 │   ├── waiver/           # Waiver submission form
 │   └── page.tsx          # Home page
+├── components/
+│   └── checkin/          # Shared check-in & ticket count UI
 ├── lib/
-│   ├── db.ts             # PostgreSQL connection
-│   ├── auth.ts           # Authentication
-│   ├── types.ts          # TypeScript types
-│   └── typeahead-utils.ts
+│   ├── db.ts, auth.ts, types.ts, typeahead-utils.ts
+│   ├── webflow-orders.ts # Normalize Webflow orders / line items
+│   └── checkin-*.ts      # Cache, config, person resolution, attendance, waiver lookup
 ├── hooks/
 │   └── useTypeahead.ts
 └── scripts/
@@ -126,7 +138,7 @@ If Webflow env vars are omitted, waiver lookup still works; purchases will be em
 
 ## Deployment
 
-**📖 See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions**
+**📖 See [DEPLOYMENT.md](./DEPLOYMENT.md) for production hosting, domains, and env vars.** Local bootstrap: [SETUP.md](./SETUP.md).
 
 ### Quick Deploy to Vercel
 

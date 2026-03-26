@@ -19,10 +19,11 @@ export async function POST(request: NextRequest) {
   const email = typeof body.email === 'string' ? body.email : undefined;
   const phone = typeof body.phone === 'string' ? body.phone : undefined;
   const event_id = typeof body.event_id === 'string' ? body.event_id : undefined;
+  const order_id = typeof body.order_id === 'string' ? body.order_id : undefined;
 
-  if (!name?.trim() && !email?.trim() && !phone?.trim()) {
+  if (!name?.trim() && !email?.trim() && !phone?.trim() && !order_id?.trim()) {
     return NextResponse.json(
-      { error: 'Provide at least one of name, email, or phone' },
+      { error: 'Provide at least one of name, email, phone, or order_id' },
       { status: 400 }
     );
   }
@@ -32,10 +33,20 @@ export async function POST(request: NextRequest) {
   try {
     const { orders, stale, error } = await getCachedWebflowOrders();
     const result = await resolveCheckinPerson(
-      { name, email, phone, eventId: event_id },
+      { name, email, phone, eventId: event_id, orderId: order_id },
       orders,
       currentYear
     );
+
+    if (result.orderNotFound) {
+      return NextResponse.json(
+        {
+          error: 'No order with that ID in the cached Webflow orders',
+          code: 'order_not_found',
+        },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       ...result,
