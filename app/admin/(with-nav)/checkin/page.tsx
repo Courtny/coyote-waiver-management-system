@@ -7,7 +7,6 @@ import Link from 'next/link';
 import {
   CheckCircle2,
   Loader2,
-  LogOut,
   Package,
   Search,
   ShieldAlert,
@@ -134,11 +133,6 @@ export default function AdminCheckInPage() {
     setPartyStatus({});
   }, [totalPartyExtraSlots]);
 
-  const handleLogout = async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    router.push('/admin/login');
-  };
-
   const runPersonSearch = useCallback(
     async (override?: { name?: string; email?: string; phone?: string }) => {
       setError('');
@@ -244,12 +238,6 @@ export default function AdminCheckInPage() {
     <AdminPageShell
       title="Check-In"
       backHref="/admin/dashboard"
-      actions={
-        <button type="button" onClick={handleLogout} className="btn btn-secondary flex items-center gap-2 shrink-0">
-          <LogOut size={18} />
-          Logout
-        </button>
-      }
       description={
         <>
           Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
@@ -302,33 +290,35 @@ export default function AdminCheckInPage() {
                 placeholder="Start typing — fuzzy match from waivers"
               />
             </div>
-            <div>
-              <label className="label" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className="input"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="phone">
-                Phone
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                className="input"
-                placeholder="555-123-4567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                autoComplete="tel"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="email">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  className="input"
+                  placeholder="email@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="phone">
+                  Phone
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  className="input"
+                  placeholder="555-123-4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                />
+              </div>
             </div>
             <div>
               <label className="label" htmlFor="order-id">
