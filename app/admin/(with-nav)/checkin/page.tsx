@@ -338,7 +338,7 @@ export default function AdminCheckInPage() {
                 id="order-id"
                 type="text"
                 className="input font-mono text-sm"
-                placeholder="Paste order ID from Webflow / receipt"
+                placeholder="Order number from confirmation email"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 autoComplete="off"
@@ -354,13 +354,13 @@ export default function AdminCheckInPage() {
                   <summary className="inline cursor-pointer text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800">
                     Where to find the order number on the customer&apos;s email
                   </summary>
-                  <figure className="mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <figure className="mx-auto mt-3 w-full max-w-lg overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
                     <Image
                       src="/images/order-id-email-sample.png"
                       alt="Sample confirmation email: Order Number appears below the line item, highlighted before the order date"
                       width={1024}
                       height={826}
-                      className="h-auto w-full max-w-lg"
+                      className="h-auto w-full"
                       sizes="(max-width: 768px) 100vw, 28rem"
                     />
                     <figcaption className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-center text-gray-600">
