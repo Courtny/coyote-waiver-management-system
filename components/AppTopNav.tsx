@@ -48,7 +48,6 @@ function linkClass(active: boolean) {
 export default function AppTopNav() {
   const pathname = usePathname() || '';
   const router = useRouter();
-  const isLogin = pathname === '/admin/login';
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -86,17 +85,15 @@ export default function AppTopNav() {
               );
             })}
           </ul>
-          {!isLogin ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="ml-1 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              title="Log out"
-            >
-              <LogOut size={16} className="shrink-0" aria-hidden />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="ml-1 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+            title="Log out"
+          >
+            <LogOut size={16} className="shrink-0" aria-hidden />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </nav>
     </header>
