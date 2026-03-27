@@ -284,11 +284,11 @@ function EventDetailPanel({
                 <col className="w-[5.5rem]" />
                 <col className="w-10" />
                 <col className="w-[10rem]" />
-                <col className="w-[24%]" />
-                <col className="w-[30%]" />
+                <col className="w-[18%]" />
+                <col className="w-[22%]" />
                 <col className="w-14" />
                 <col className="w-[12%]" />
-                <col className="w-40" />
+                <col className="w-48" />
               </colgroup>
               <thead>
                 <tr className="border-b-2 border-gray-200">
@@ -412,7 +412,7 @@ function EventDetailPanel({
                           />
                         )}
                       </td>
-                      <td className="px-3 py-3 font-medium align-top min-w-0 max-w-[10rem]">
+                      <td className="px-3 py-3 font-medium align-top min-w-0">
                         <div className="text-gray-900 text-sm leading-snug break-words">{row.displayName}</div>
                         {row.sku && (
                           <div className="text-xs text-gray-500 font-mono mt-0.5 break-all">{row.sku}</div>
