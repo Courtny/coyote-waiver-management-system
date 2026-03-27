@@ -15,18 +15,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing product_id' }, { status: 400 });
   }
 
-  const { events, skuDisplay, skuPartySize, productSkuAllowlist } = getCheckinConfig();
+  const { events, skuDisplay, skuPartySize } = getCheckinConfig();
   const currentYear = new Date().getFullYear();
 
   try {
     const { orders, stale, error } = await getCachedWebflowOrders();
-    const rawLines = buildEventAttendanceLines(
-      orders,
-      productId,
-      skuDisplay,
-      skuPartySize,
-      productSkuAllowlist
-    );
+    const rawLines = buildEventAttendanceLines(orders, productId, skuDisplay, skuPartySize);
     const lines = await enrichAttendanceLinesWithWaiverIndicators(rawLines, currentYear);
     const title = resolveEventTitle(productId, orders, events);
 
