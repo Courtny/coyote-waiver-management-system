@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Users,
 } from 'lucide-react';
+import type { CheckinEventOption } from '@/lib/checkin-config';
 
 type SkuBreakdownRow = {
   sku: string;
@@ -57,12 +58,32 @@ function orderedAtTimestamp(iso: string | null): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
+/** Initial SKU filter: optional per-product defaults from CHECKIN_EVENTS_JSON, intersected with line data. */
+function computeInitialIncludedSkus(
+  lines: EventAttendanceLine[],
+  productId: string,
+  checkinEvents: CheckinEventOption[] | undefined
+): Set<string> {
+  const allKeys = new Set(lines.map((l) => l.sku || ''));
+  const pid = productId.trim();
+  const cfg = checkinEvents?.find((e) => e.id === pid);
+  const defaults = cfg?.defaultIncludedSkuKeys;
+  if (!defaults?.length) return allKeys;
+  const allow = new Set(defaults.map((s) => s.trim()).filter(Boolean));
+  const intersection = new Set<string>();
+  for (const k of allKeys) {
+    if (allow.has(k)) intersection.add(k);
+  }
+  return intersection.size > 0 ? intersection : allKeys;
+}
+
 type EventDetailPanelProps = {
   detail: { productId: string; title: string; lines: EventAttendanceLine[] };
   detailLoading: boolean;
   ordersStale: boolean;
   webflowError?: string;
   onBack: () => void;
+  checkinEvents?: CheckinEventOption[];
 };
 
 function EventDetailPanel({
@@ -71,6 +92,7 @@ function EventDetailPanel({
   ordersStale,
   webflowError,
   onBack,
+  checkinEvents,
 }: EventDetailPanelProps) {
   const [includedSkus, setIncludedSkus] = useState<Set<string>>(() => new Set());
   const [filterExpanded, setFilterExpanded] = useState(false);
@@ -79,8 +101,8 @@ function EventDetailPanel({
 
   useEffect(() => {
     if (detailLoading) return;
-    setIncludedSkus(new Set(detail.lines.map((l) => l.sku || '')));
-  }, [detail.productId, detailLoading, detail.lines]);
+    setIncludedSkus(computeInitialIncludedSkus(detail.lines, detail.productId, checkinEvents));
+  }, [detail.productId, detailLoading, detail.lines, checkinEvents]);
 
   useEffect(() => {
     setFilterExpanded(false);
@@ -366,7 +388,13 @@ function EventDetailPanel({
 
 
 
-export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: boolean }) {
+export function EventTicketCounts({
+  webflowConfigured,
+  checkinEvents,
+}: {
+  webflowConfigured: boolean;
+  checkinEvents?: CheckinEventOption[];
+}) {
   const router = useRouter();
   const [events, setEvents] = useState<EventAttendanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -466,6 +494,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         ordersStale={ordersStale}
         webflowError={webflowError}
         onBack={closeDetail}
+        checkinEvents={checkinEvents}
       />
     );
   }

@@ -14,11 +14,12 @@ import {
 } from 'lucide-react';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
+import type { CheckinEventOption } from '@/lib/checkin-config';
 import { WaiverSearchResult } from '@/lib/types';
 
 type Meta = {
   currentYear: number;
-  events: { id: string; label: string }[];
+  events: CheckinEventOption[];
   webflowConfigured: boolean;
 };
 

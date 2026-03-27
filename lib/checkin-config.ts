@@ -1,4 +1,9 @@
-export type CheckinEventOption = { id: string; label: string };
+export type CheckinEventOption = {
+  id: string;
+  label: string;
+  /** If set, Tickets detail SKU filter defaults to only these keys (intersected with lines); omit for all SKUs. */
+  defaultIncludedSkuKeys?: string[];
+};
 
 function parseJsonMap(raw: string | undefined): Record<string, number> {
   if (!raw?.trim()) return {};
@@ -41,7 +46,18 @@ function parseEventsJson(raw: string | undefined): CheckinEventOption[] {
         const id = typeof o.id === 'string' ? o.id : '';
         const label = typeof o.label === 'string' ? o.label : id;
         if (!id) return null;
-        return { id, label };
+        let defaultIncludedSkuKeys: string[] | undefined;
+        const rawKeys = o.defaultIncludedSkuKeys;
+        if (Array.isArray(rawKeys)) {
+          const keys = rawKeys
+            .filter((x): x is string => typeof x === 'string')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (keys.length > 0) defaultIncludedSkuKeys = keys;
+        }
+        const entry: CheckinEventOption = { id, label };
+        if (defaultIncludedSkuKeys) entry.defaultIncludedSkuKeys = defaultIncludedSkuKeys;
+        return entry;
       })
       .filter(Boolean) as CheckinEventOption[];
   } catch {
