@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, UserPlus } from 'lucide-react';
 import AdminPageShell from '@/components/admin/AdminPageShell';
+import { TableSkeleton } from '@/components/admin/TableSkeleton';
 
 interface AdminUser {
   id: number;
@@ -234,9 +235,7 @@ export default function AdminUsersPage() {
             All Admin Users ({users.length})
           </h2>
           {isLoading ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600">Loading admin users...</p>
-            </div>
+            <TableSkeleton columns={4} rows={6} ariaLabel="Loading admin users" />
           ) : users.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600">No admin users found.</p>

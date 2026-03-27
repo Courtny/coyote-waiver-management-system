@@ -7,6 +7,7 @@ import { WaiverSearchResult } from '@/lib/types';
 import { Search, CheckCircle, XCircle, Loader2, Download } from 'lucide-react';
 import { highlightMatch } from '@/lib/typeahead-utils';
 import AdminPageShell from '@/components/admin/AdminPageShell';
+import { TableSkeleton } from '@/components/admin/TableSkeleton';
 
 interface TypeaheadOption {
   id: number;
@@ -389,7 +390,14 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {isSearchMode && searchResults.length > 0 && (
+        {isSearchMode && isLoading && (
+          <div className="card">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Search Results</h2>
+            <TableSkeleton columns={7} rows={8} ariaLabel="Loading search results" />
+          </div>
+        )}
+
+        {isSearchMode && !isLoading && searchResults.length > 0 && (
           <div className="card">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Search Results ({searchResults.length})
@@ -484,9 +492,7 @@ export default function AdminDashboard() {
               </h2>
             </div>
             {isLoadingAll ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600">Loading waivers...</p>
-              </div>
+              <TableSkeleton columns={7} rows={10} ariaLabel="Loading waivers" />
             ) : allWaivers.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-600">No waivers submitted yet.</p>

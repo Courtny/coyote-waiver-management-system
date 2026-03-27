@@ -17,6 +17,11 @@ export type EventAttendanceSummary = {
   imageUrl?: string;
 };
 
+export type WaiverIndicatorDto = {
+  level: 'green' | 'yellow' | 'red';
+  tooltip: string;
+};
+
 export type EventAttendanceLine = {
   orderId: string;
   orderedAt: string | null;
@@ -25,7 +30,10 @@ export type EventAttendanceLine = {
   sku: string;
   displayName: string;
   quantity: number;
+  /** From CHECKIN_SKU_PARTY_SIZE; used for multi-person waiver UI rules. */
+  partySize: number;
   imageUrl?: string;
+  waiverIndicator?: WaiverIndicatorDto;
 };
 
 function displayForSku(sku: string, displayName: string, skuDisplay: Record<string, string>): string {
@@ -161,7 +169,8 @@ export function buildAttendanceSummaries(
 export function buildEventAttendanceLines(
   orders: NormalizedOrder[],
   productId: string,
-  skuDisplay: Record<string, string>
+  skuDisplay: Record<string, string>,
+  skuPartySize: Record<string, number>
 ): EventAttendanceLine[] {
   const rows: EventAttendanceLine[] = [];
   const pid = productId.trim();
@@ -172,14 +181,17 @@ export function buildEventAttendanceLines(
 
     for (const line of order.lines) {
       if (line.productId?.trim() !== pid) continue;
+      const skuKey = line.sku || line.variantId || line.displayName;
+      const partySize = line.sku ? skuPartySize[line.sku] ?? 1 : 1;
       rows.push({
         orderId: order.orderId,
         orderedAt: order.acceptedOn,
         customerName: name,
         customerEmail: email,
-        sku: line.sku || line.variantId || line.displayName,
+        sku: skuKey,
         displayName: displayForSku(line.sku, line.displayName, skuDisplay),
         quantity: line.quantity,
+        partySize,
         ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
       });
     }

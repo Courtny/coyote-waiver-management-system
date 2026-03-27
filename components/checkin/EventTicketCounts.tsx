@@ -13,6 +13,8 @@ import {
   RefreshCw,
   Users,
 } from 'lucide-react';
+import type { EventAttendanceLine } from '@/lib/checkin-attendance';
+import { TableSkeleton } from '@/components/admin/TableSkeleton';
 
 type SkuBreakdownRow = {
   sku: string;
@@ -27,17 +29,6 @@ type EventAttendanceSummary = {
   orderCount: number;
   totalTickets: number;
   skuBreakdown: SkuBreakdownRow[];
-  imageUrl?: string;
-};
-
-type EventAttendanceLine = {
-  orderId: string;
-  orderedAt: string | null;
-  customerName: string;
-  customerEmail: string;
-  sku: string;
-  displayName: string;
-  quantity: number;
   imageUrl?: string;
 };
 
@@ -178,9 +169,7 @@ function EventDetailPanel({
       </div>
 
       {detailLoading ? (
-        <div className="flex justify-center py-16 text-gray-500">
-          <Loader2 className="animate-spin" size={32} />
-        </div>
+        <TableSkeleton columns={8} rows={10} ariaLabel="Loading ticket lines" />
       ) : (
         <>
           {skuOptions.length > 1 ? (
@@ -256,6 +245,9 @@ function EventDetailPanel({
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold w-14" scope="col">
                     <span className="sr-only">Image</span>
                   </th>
+                  <th className="px-2 py-3 w-10 text-left text-gray-700 font-semibold" scope="col">
+                    <span className="sr-only">Waiver</span>
+                  </th>
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">Customer</th>
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
@@ -311,13 +303,13 @@ function EventDetailPanel({
               <tbody>
                 {detail.lines.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-600">
                       No line items for this product in cached orders.
                     </td>
                   </tr>
                 ) : includedSkus.size === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-600">
                       No tickets / SKUs selected — choose at least one filter above or use Select all.
                     </td>
                   </tr>
@@ -337,6 +329,27 @@ function EventDetailPanel({
                         ) : (
                           <div
                             className="h-10 w-10 rounded-md border border-dashed border-gray-200 bg-gray-50"
+                            aria-hidden
+                          />
+                        )}
+                      </td>
+                      <td className="px-2 py-3 align-middle w-10">
+                        {row.waiverIndicator ? (
+                          <span
+                            title={row.waiverIndicator.tooltip}
+                            aria-label={row.waiverIndicator.tooltip}
+                            className={
+                              'inline-block h-3 w-3 rounded-full shrink-0 ' +
+                              (row.waiverIndicator.level === 'green'
+                                ? 'bg-green-500'
+                                : row.waiverIndicator.level === 'yellow'
+                                  ? 'bg-amber-400'
+                                  : 'bg-red-500')
+                            }
+                          />
+                        ) : (
+                          <span
+                            className="inline-block h-3 w-3 rounded-full shrink-0 bg-gray-200"
                             aria-hidden
                           />
                         )}
@@ -496,8 +509,24 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       {loading && events.length === 0 ? (
-        <div className="flex justify-center py-16 text-gray-500">
-          <Loader2 className="animate-spin" size={32} />
+        <div
+          className="grid gap-4 sm:grid-cols-2"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading events"
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="card py-5 px-6 flex flex-row gap-4 items-start animate-pulse"
+            >
+              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg bg-gray-200" />
+              <div className="flex-1 min-w-0 space-y-3">
+                <div className="h-6 bg-gray-200 rounded w-3/4" />
+                <div className="h-4 bg-gray-100 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : events.length === 0 ? (
         <p className="text-gray-600 text-sm py-8 text-center">No ecommerce line items found in orders yet.</p>

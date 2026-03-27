@@ -340,3 +340,12 @@ export async function lookupWaiverOnly(
 ): Promise<CheckinWaiverResult> {
   return resolveWaiver(input, currentYear);
 }
+
+/** Ticket list row: email and/or purchaser name only (no phone on Webflow orders). */
+export async function resolveWaiverForTicketCustomer(
+  input: { name?: string; email?: string },
+  currentYear: number
+): Promise<CheckinWaiverResult> {
+  return resolveWaiver(input, currentYear);
+}
+

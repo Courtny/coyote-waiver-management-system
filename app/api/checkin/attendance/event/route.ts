@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildEventAttendanceLines, resolveEventTitle } from '@/lib/checkin-attendance';
+import { enrichAttendanceLinesWithWaiverIndicators } from '@/lib/attendance-waiver-enrich';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
@@ -14,11 +15,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing product_id' }, { status: 400 });
   }
 
-  const { events, skuDisplay } = getCheckinConfig();
+  const { events, skuDisplay, skuPartySize } = getCheckinConfig();
+  const currentYear = new Date().getFullYear();
 
   try {
     const { orders, stale, error } = await getCachedWebflowOrders();
-    const lines = buildEventAttendanceLines(orders, productId, skuDisplay);
+    const rawLines = buildEventAttendanceLines(orders, productId, skuDisplay, skuPartySize);
+    const lines = await enrichAttendanceLinesWithWaiverIndicators(rawLines, currentYear);
     const title = resolveEventTitle(productId, orders, events);
 
     return NextResponse.json({
