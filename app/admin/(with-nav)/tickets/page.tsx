@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EventTicketCounts } from '@/components/checkin/EventTicketCounts';
 import AdminPageShell from '@/components/admin/AdminPageShell';
-import type { CheckinEventOption } from '@/lib/checkin-config';
 
 type Meta = {
   currentYear: number;
-  events: CheckinEventOption[];
+  events: { id: string; label: string }[];
   webflowConfigured: boolean;
 };
 
@@ -64,10 +63,7 @@ export default function AdminTicketsPage() {
       }
     >
       <div className="card">
-        <EventTicketCounts
-          webflowConfigured={Boolean(meta?.webflowConfigured)}
-          checkinEvents={meta?.events}
-        />
+        <EventTicketCounts webflowConfigured={Boolean(meta?.webflowConfigured)} />
       </div>
     </AdminPageShell>
   );
