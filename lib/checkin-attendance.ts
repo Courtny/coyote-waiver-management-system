@@ -50,17 +50,6 @@ function lineSkuAggregationKey(
   return line.sku || line.variantId || label;
 }
 
-function normalizeSkuCompare(s: string): string {
-  return s.trim().toLowerCase();
-}
-
-/** Env allowlist entries may differ by case/whitespace from Webflow variant SKU. */
-function allowlistIncludesKey(allowed: string[], key: string): boolean {
-  if (!key) return false;
-  const nk = normalizeSkuCompare(key);
-  return allowed.some((a) => normalizeSkuCompare(a) === nk);
-}
-
 export function lineMatchesProductSkuAllowlist(
   productId: string,
   line: NormalizedLineItem,
@@ -69,7 +58,7 @@ export function lineMatchesProductSkuAllowlist(
 ): boolean {
   const allowed = allowlist[productId];
   if (!allowed || allowed.length === 0) return true;
-  return allowlistIncludesKey(allowed, lineSkuAggregationKey(line, skuDisplay));
+  return allowed.includes(lineSkuAggregationKey(line, skuDisplay));
 }
 
 /**
@@ -107,46 +96,15 @@ function expandProductSkuAllowlistAliases(
         const pid = l.productId?.trim();
         if (!pid) continue;
         const key = lineSkuAggregationKey(l, skuDisplay);
-        if (allowlistIncludesKey(skus, key)) candidatePids.add(pid);
+        if (skus.includes(key)) candidatePids.add(pid);
       }
     }
+    if (candidatePids.size !== 1) continue;
 
-    if (candidatePids.size === 0) {
-      // #region agent log
-      const samples: { pid: string; rawSku: string; aggKey: string }[] = [];
-      outerSamples: for (const o of orders) {
-        for (const l of o.lines) {
-          const pid = l.productId?.trim();
-          if (!pid) continue;
-          samples.push({ pid, rawSku: l.sku, aggKey: lineSkuAggregationKey(l, skuDisplay) });
-          if (samples.length >= 12) break outerSamples;
-        }
-      }
-      const payload = {
-        sessionId: '0dcbc7',
-        runId: 'alias-fail',
-        hypothesisId: 'H-alias-0',
-        location: 'checkin-attendance.ts:expandProductSkuAllowlistAliases',
-        message:
-          'Allowlist alias skipped: config product id not on orders and no line matched allowlist SKUs',
-        data: { configPid, allowlistSkuCount: skus.length, lineSamples: samples },
-        timestamp: Date.now(),
-      };
-      console.log('[debug-0dcbc7]', JSON.stringify(payload));
-      fetch('http://127.0.0.1:7243/ingest/b643a5d8-d250-477e-88dd-d10cc6efdfdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0dcbc7' },
-        body: JSON.stringify(payload),
-      }).catch(() => {});
-      // #endregion
-      continue;
-    }
-
-    for (const pid of candidatePids) {
-      if (!out[pid]) {
-        out[pid] = skus;
-        aliases.push({ configPid, actualPid: pid });
-      }
+    const onlyPid = [...candidatePids][0];
+    if (!out[onlyPid]) {
+      out[onlyPid] = skus;
+      aliases.push({ configPid, actualPid: onlyPid });
     }
   }
 
@@ -305,7 +263,7 @@ export function buildAttendanceSummaries(
           const allowed = effectiveAllowlist[pid];
           if (!allowed?.length) continue;
           const key = lineSkuAggregationKey(line, skuDisplay);
-          if (!allowlistIncludesKey(allowed, key)) {
+          if (!allowed.includes(key)) {
             if (!excludedKeysSample[pid]) excludedKeysSample[pid] = [];
             if (excludedKeysSample[pid].length < 8) excludedKeysSample[pid].push(key);
           }
