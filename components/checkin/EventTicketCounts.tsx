@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronRight, Loader2, RefreshCw, Users } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+  Users,
+} from 'lucide-react';
 
 type SkuBreakdownRow = {
   sku: string;
@@ -41,6 +51,12 @@ function formatOrderDate(iso: string | null): string {
   });
 }
 
+function orderedAtTimestamp(iso: string | null): number {
+  if (!iso) return 0;
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? 0 : t;
+}
+
 type EventDetailPanelProps = {
   detail: { productId: string; title: string; lines: EventAttendanceLine[] };
   detailLoading: boolean;
@@ -57,11 +73,20 @@ function EventDetailPanel({
   onBack,
 }: EventDetailPanelProps) {
   const [includedSkus, setIncludedSkus] = useState<Set<string>>(() => new Set());
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  const [sortKey, setSortKey] = useState<'quantity' | 'date'>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     if (detailLoading) return;
     setIncludedSkus(new Set(detail.lines.map((l) => l.sku || '')));
   }, [detail.productId, detailLoading, detail.lines]);
+
+  useEffect(() => {
+    setFilterExpanded(false);
+    setSortKey('date');
+    setSortDir('desc');
+  }, [detail.productId]);
 
   const skuOptions = useMemo(() => {
     if (!detail.lines.length) return [] as { skuKey: string; displayName: string }[];
@@ -82,7 +107,31 @@ function EventDetailPanel({
     [detail.lines, includedSkus]
   );
 
+  const sortedLines = useMemo(() => {
+    const rows = [...filteredLines];
+    rows.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'quantity') {
+        cmp = a.quantity - b.quantity;
+      } else {
+        cmp = orderedAtTimestamp(a.orderedAt) - orderedAtTimestamp(b.orderedAt);
+      }
+      if (cmp !== 0) return sortDir === 'asc' ? cmp : -cmp;
+      return a.orderId.localeCompare(b.orderId, undefined, { sensitivity: 'base' });
+    });
+    return rows;
+  }, [filteredLines, sortKey, sortDir]);
+
   const ticketSum = filteredLines.reduce((s, r) => s + r.quantity, 0);
+
+  const toggleColumnSort = (key: 'quantity' | 'date') => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir('desc');
+      return;
+    }
+    setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+  };
 
   const toggleSku = (skuKey: string) => {
     setIncludedSkus((prev) => {
@@ -135,40 +184,68 @@ function EventDetailPanel({
       ) : (
         <>
           {skuOptions.length > 1 ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                <p className="text-sm font-medium text-gray-800">Filter by ticket / SKU</p>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={selectAllSkus}>
-                    Select all
-                  </button>
-                  <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={clearAllSkus}>
-                    Clear
-                  </button>
+            <div className="rounded-lg border border-gray-200 bg-gray-50/80 overflow-hidden">
+              <button
+                type="button"
+                id="event-ticket-sku-filter-toggle"
+                onClick={() => setFilterExpanded((v) => !v)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-100/80 transition-colors"
+                aria-expanded={filterExpanded}
+                aria-controls="event-ticket-sku-filter-panel"
+              >
+                <span className="text-sm font-medium text-gray-800">Filter by ticket / SKU</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  {!filterExpanded ? (
+                    <span className="text-xs text-gray-500 tabular-nums">
+                      {includedSkus.size}/{skuOptions.length} selected
+                    </span>
+                  ) : null}
+                  <ChevronDown
+                    size={20}
+                    className={`text-gray-600 shrink-0 transition-transform ${filterExpanded ? 'rotate-180' : ''}`}
+                    aria-hidden
+                  />
+                </span>
+              </button>
+              {filterExpanded ? (
+                <div
+                  id="event-ticket-sku-filter-panel"
+                  role="region"
+                  aria-labelledby="event-ticket-sku-filter-toggle"
+                  className="border-t border-gray-200 px-4 pb-3"
+                >
+                  <div className="flex flex-wrap justify-end gap-2 mb-3 pt-3">
+                    <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={selectAllSkus}>
+                      Select all
+                    </button>
+                    <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={clearAllSkus}>
+                      Clear
+                    </button>
+                  </div>
+                  <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                    {skuOptions.map((opt) => (
+                      <li key={opt.skuKey || '__empty__'}>
+                        <label className="inline-flex items-start gap-2 cursor-pointer text-sm">
+                          <input
+                            type="checkbox"
+                            className="mt-0.5 rounded border-gray-300"
+                            checked={includedSkus.has(opt.skuKey)}
+                            onChange={() => toggleSku(opt.skuKey)}
+                          />
+                          <span>
+                            <span className="font-medium text-gray-900">{opt.displayName}</span>
+                            {opt.skuKey ? (
+                              <span className="block text-xs text-gray-500 font-mono mt-0.5">{opt.skuKey}</span>
+                            ) : (
+                              <span className="block text-xs text-gray-500 mt-0.5">(no SKU)</span>
+                            )}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-              <ul className="flex flex-wrap gap-x-4 gap-y-2">
-                {skuOptions.map((opt) => (
-                  <li key={opt.skuKey || '__empty__'}>
-                    <label className="inline-flex items-start gap-2 cursor-pointer text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 rounded border-gray-300"
-                        checked={includedSkus.has(opt.skuKey)}
-                        onChange={() => toggleSku(opt.skuKey)}
-                      />
-                      <span>
-                        <span className="font-medium text-gray-900">{opt.displayName}</span>
-                        {opt.skuKey ? (
-                          <span className="block text-xs text-gray-500 font-mono mt-0.5">{opt.skuKey}</span>
-                        ) : (
-                          <span className="block text-xs text-gray-500 mt-0.5">(no SKU)</span>
-                        )}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
+              ) : null}
             </div>
           ) : null}
 
@@ -182,9 +259,53 @@ function EventDetailPanel({
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">Customer</th>
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold text-right">Qty</th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-gray-700 font-semibold"
+                    aria-sort={sortKey === 'quantity' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleColumnSort('quantity')}
+                      aria-label="Sort by quantity"
+                      className="inline-flex w-full items-center justify-end gap-1.5 rounded px-1 py-0.5 hover:bg-gray-100 -mr-1 font-semibold text-gray-700"
+                    >
+                      Qty
+                      {sortKey === 'quantity' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp size={16} className="shrink-0 text-gray-700" aria-hidden />
+                        ) : (
+                          <ArrowDown size={16} className="shrink-0 text-gray-700" aria-hidden />
+                        )
+                      ) : (
+                        <ArrowUpDown size={16} className="shrink-0 text-gray-400 opacity-70" aria-hidden />
+                      )}
+                    </button>
+                  </th>
                   <th className="px-4 py-3 text-left text-gray-700 font-semibold">Order</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Date</th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-left text-gray-700 font-semibold"
+                    aria-sort={sortKey === 'date' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleColumnSort('date')}
+                      aria-label="Sort by date"
+                      className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-gray-100 -ml-1 font-semibold text-gray-700"
+                    >
+                      Date
+                      {sortKey === 'date' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp size={16} className="shrink-0 text-gray-700" aria-hidden />
+                        ) : (
+                          <ArrowDown size={16} className="shrink-0 text-gray-700" aria-hidden />
+                        )
+                      ) : (
+                        <ArrowUpDown size={16} className="shrink-0 text-gray-400 opacity-70" aria-hidden />
+                      )}
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -201,7 +322,7 @@ function EventDetailPanel({
                     </td>
                   </tr>
                 ) : (
-                  filteredLines.map((row, i) => (
+                  sortedLines.map((row, i) => (
                     <tr
                       key={`${row.orderId}-${row.sku}-${i}`}
                       className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
