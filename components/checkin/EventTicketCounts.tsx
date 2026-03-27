@@ -48,6 +48,16 @@ function orderedAtTimestamp(iso: string | null): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
+function rowMatchesLineSearch(row: EventAttendanceLine, queryLower: string): boolean {
+  if (!queryLower) return true;
+  const orderId = (row.orderId || '').toLowerCase();
+  const email = (row.customerEmail || '').toLowerCase();
+  const name = (row.customerName || '').toLowerCase();
+  return (
+    orderId.includes(queryLower) || email.includes(queryLower) || name.includes(queryLower)
+  );
+}
+
 type EventDetailPanelProps = {
   detail: { productId: string; title: string; lines: EventAttendanceLine[] };
   detailLoading: boolean;
@@ -65,6 +75,7 @@ function EventDetailPanel({
 }: EventDetailPanelProps) {
   const [includedSkus, setIncludedSkus] = useState<Set<string>>(() => new Set());
   const [filterExpanded, setFilterExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<'quantity' | 'date'>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -75,6 +86,7 @@ function EventDetailPanel({
 
   useEffect(() => {
     setFilterExpanded(false);
+    setSearchQuery('');
     setSortKey('date');
     setSortDir('desc');
   }, [detail.productId]);
@@ -98,8 +110,14 @@ function EventDetailPanel({
     [detail.lines, includedSkus]
   );
 
+  const textFilteredLines = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return filteredLines;
+    return filteredLines.filter((row) => rowMatchesLineSearch(row, q));
+  }, [filteredLines, searchQuery]);
+
   const sortedLines = useMemo(() => {
-    const rows = [...filteredLines];
+    const rows = [...textFilteredLines];
     rows.sort((a, b) => {
       let cmp = 0;
       if (sortKey === 'quantity') {
@@ -111,9 +129,9 @@ function EventDetailPanel({
       return a.orderId.localeCompare(b.orderId, undefined, { sensitivity: 'base' });
     });
     return rows;
-  }, [filteredLines, sortKey, sortDir]);
+  }, [textFilteredLines, sortKey, sortDir]);
 
-  const ticketSum = filteredLines.reduce((s, r) => s + r.quantity, 0);
+  const ticketSum = textFilteredLines.reduce((s, r) => s + r.quantity, 0);
 
   const toggleColumnSort = (key: 'quantity' | 'date') => {
     if (sortKey !== key) {
@@ -161,9 +179,12 @@ function EventDetailPanel({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">{detail.title}</h2>
         <p className="text-sm text-gray-600">
-          {filteredLines.length} line{filteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
+          {textFilteredLines.length} line{textFilteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
           {filteredLines.length !== detail.lines.length ? (
             <span className="text-gray-500"> (of {detail.lines.length} lines)</span>
+          ) : null}
+          {searchQuery.trim() && textFilteredLines.length < filteredLines.length ? (
+            <span className="text-gray-500"> (of {filteredLines.length} matching SKU filters)</span>
           ) : null}
         </p>
       </div>
@@ -238,22 +259,51 @@ function EventDetailPanel({
             </div>
           ) : null}
 
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div className="w-full sm:max-w-md">
+              <label htmlFor="event-ticket-line-search" className="label text-sm">
+                Search orders
+              </label>
+              <input
+                id="event-ticket-line-search"
+                type="search"
+                inputMode="search"
+                autoComplete="off"
+                placeholder="Order ID, email, or customer name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input w-full"
+                aria-label="Search by order ID, email, or customer name"
+              />
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full table-fixed border-collapse">
+              <colgroup>
+                <col className="w-[5.5rem]" />
+                <col className="w-10" />
+                <col className="w-[10rem]" />
+                <col className="w-[24%]" />
+                <col className="w-[30%]" />
+                <col className="w-14" />
+                <col className="w-[12%]" />
+                <col className="w-40" />
+              </colgroup>
               <thead>
                 <tr className="border-b-2 border-gray-200">
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold w-14" scope="col">
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold" scope="col">
                     <span className="sr-only">Image</span>
                   </th>
-                  <th className="px-2 py-3 w-10 text-left text-gray-700 font-semibold" scope="col">
+                  <th className="px-2 py-3 text-left text-gray-700 font-semibold" scope="col">
                     <span className="sr-only">Waiver</span>
                   </th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Customer</th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Customer</th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Email</th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-right text-gray-700 font-semibold"
+                    className="px-3 py-3 text-right text-gray-700 font-semibold"
                     aria-sort={sortKey === 'quantity' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     <button
@@ -274,10 +324,10 @@ function EventDetailPanel({
                       )}
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Order</th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Order</th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-gray-700 font-semibold"
+                    className="px-3 py-3 text-left text-gray-700 font-semibold"
                     aria-sort={sortKey === 'date' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     <button
@@ -313,27 +363,35 @@ function EventDetailPanel({
                       No tickets / SKUs selected — choose at least one filter above or use Select all.
                     </td>
                   </tr>
+                ) : filteredLines.length > 0 &&
+                  textFilteredLines.length === 0 &&
+                  searchQuery.trim() ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-600">
+                      No rows match your search. Try different order ID, email, or name keywords.
+                    </td>
+                  </tr>
                 ) : (
                   sortedLines.map((row, i) => (
                     <tr
                       key={`${row.orderId}-${row.sku}-${i}`}
                       className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-3 py-3 align-middle">
                         {row.imageUrl ? (
                           <img
                             src={row.imageUrl}
                             alt={row.displayName}
-                            className="h-10 w-10 rounded-md object-cover border border-gray-200 bg-white"
+                            className="h-14 w-14 rounded-md object-cover border border-gray-200 bg-white"
                           />
                         ) : (
                           <div
-                            className="h-10 w-10 rounded-md border border-dashed border-gray-200 bg-gray-50"
+                            className="h-14 w-14 rounded-md border border-dashed border-gray-200 bg-gray-50"
                             aria-hidden
                           />
                         )}
                       </td>
-                      <td className="px-2 py-3 align-middle w-10">
+                      <td className="px-2 py-3 align-middle">
                         {row.waiverIndicator ? (
                           <span
                             title={row.waiverIndicator.tooltip}
@@ -354,17 +412,27 @@ function EventDetailPanel({
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium">
-                        <div className="text-gray-900">{row.displayName}</div>
+                      <td className="px-3 py-3 font-medium align-top min-w-0 max-w-[10rem]">
+                        <div className="text-gray-900 text-sm leading-snug break-words">{row.displayName}</div>
                         {row.sku && (
-                          <div className="text-xs text-gray-500 font-mono mt-0.5">{row.sku}</div>
+                          <div className="text-xs text-gray-500 font-mono mt-0.5 break-all">{row.sku}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{row.customerName}</td>
-                      <td className="px-4 py-3 text-gray-600 break-all max-w-[200px]">{row.customerEmail}</td>
-                      <td className="px-4 py-3 text-right text-gray-600 font-medium">{row.quantity}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{row.orderId}</td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatOrderDate(row.orderedAt)}</td>
+                      <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-words">
+                        {row.customerName}
+                      </td>
+                      <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-all">
+                        {row.customerEmail}
+                      </td>
+                      <td className="px-3 py-3 text-right text-gray-600 font-medium align-top">
+                        {row.quantity}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-xs text-gray-600 align-top break-all min-w-0">
+                        {row.orderId}
+                      </td>
+                      <td className="px-3 py-3 text-gray-600 whitespace-nowrap align-top">
+                        {formatOrderDate(row.orderedAt)}
+                      </td>
                     </tr>
                   ))
                 )}
