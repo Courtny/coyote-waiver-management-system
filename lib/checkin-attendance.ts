@@ -1,5 +1,5 @@
 import type { CheckinEventOption } from './checkin-config';
-import type { NormalizedOrder } from './webflow-orders';
+import type { NormalizedLineItem, NormalizedOrder } from './webflow-orders';
 
 export type SkuBreakdownRow = {
   sku: string;
@@ -39,6 +39,96 @@ export type EventAttendanceLine = {
 function displayForSku(sku: string, displayName: string, skuDisplay: Record<string, string>): string {
   if (sku && skuDisplay[sku]) return skuDisplay[sku];
   return displayName;
+}
+
+/** Same aggregation key as skuMap / detail rows; must match allowlist entries (variant SKU strings). */
+function lineSkuAggregationKey(
+  line: NormalizedLineItem,
+  skuDisplay: Record<string, string>
+): string {
+  const label = displayForSku(line.sku, line.displayName, skuDisplay);
+  return line.sku || line.variantId || label;
+}
+
+export function lineMatchesProductSkuAllowlist(
+  productId: string,
+  line: NormalizedLineItem,
+  allowlist: Record<string, string[]>,
+  skuDisplay: Record<string, string>
+): boolean {
+  const allowed = allowlist[productId];
+  if (!allowed || allowed.length === 0) return true;
+  return allowed.includes(lineSkuAggregationKey(line, skuDisplay));
+}
+
+/**
+ * If env uses a Webflow CMS item id but order line items carry a different ecommerce productId,
+ * no lines match allowlist[productId] and filtering is skipped. When the configured id never
+ * appears on any order line but exactly one other productId has lines whose aggregation keys
+ * are in that allowlist, copy the allowlist to that product id.
+ */
+function expandProductSkuAllowlistAliases(
+  orders: NormalizedOrder[],
+  base: Record<string, string[]>,
+  skuDisplay: Record<string, string>
+): { effective: Record<string, string[]>; aliases: { configPid: string; actualPid: string }[] } {
+  const out: Record<string, string[]> = { ...base };
+  const aliases: { configPid: string; actualPid: string }[] = [];
+
+  for (const [configPid, skus] of Object.entries(base)) {
+    if (!skus.length) continue;
+
+    let configSeen = false;
+    for (const o of orders) {
+      for (const l of o.lines) {
+        if (l.productId?.trim() === configPid) {
+          configSeen = true;
+          break;
+        }
+      }
+      if (configSeen) break;
+    }
+    if (configSeen) continue;
+
+    const candidatePids = new Set<string>();
+    for (const o of orders) {
+      for (const l of o.lines) {
+        const pid = l.productId?.trim();
+        if (!pid) continue;
+        const key = lineSkuAggregationKey(l, skuDisplay);
+        if (skus.includes(key)) candidatePids.add(pid);
+      }
+    }
+    if (candidatePids.size !== 1) continue;
+
+    const onlyPid = [...candidatePids][0];
+    if (!out[onlyPid]) {
+      out[onlyPid] = skus;
+      aliases.push({ configPid, actualPid: onlyPid });
+    }
+  }
+
+  // #region agent log
+  if (aliases.length > 0) {
+    const payload = {
+      sessionId: '0dcbc7',
+      runId: 'post-fix',
+      hypothesisId: 'H3-alias',
+      location: 'checkin-attendance.ts:expandProductSkuAllowlistAliases',
+      message: 'Mapped allowlist from config product id to order line productId',
+      data: { aliases },
+      timestamp: Date.now(),
+    };
+    console.log('[debug-0dcbc7]', JSON.stringify(payload));
+    fetch('http://127.0.0.1:7243/ingest/b643a5d8-d250-477e-88dd-d10cc6efdfdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0dcbc7' },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+  }
+  // #endregion
+
+  return { effective: out, aliases };
 }
 
 function eventTitle(
@@ -86,8 +176,15 @@ type Agg = {
 export function buildAttendanceSummaries(
   orders: NormalizedOrder[],
   events: CheckinEventOption[],
-  skuDisplay: Record<string, string>
+  skuDisplay: Record<string, string>,
+  productSkuAllowlist: Record<string, string[]>
 ): EventAttendanceSummary[] {
+  const { effective: effectiveAllowlist } = expandProductSkuAllowlistAliases(
+    orders,
+    productSkuAllowlist,
+    skuDisplay
+  );
+
   const byProduct = new Map<string, Agg>();
 
   for (const order of orders) {
@@ -95,6 +192,7 @@ export function buildAttendanceSummaries(
     for (const line of order.lines) {
       const pid = line.productId?.trim();
       if (!pid) continue;
+      if (!lineMatchesProductSkuAllowlist(pid, line, effectiveAllowlist, skuDisplay)) continue;
       productsTouched.add(pid);
 
       let agg = byProduct.get(pid);
@@ -117,7 +215,7 @@ export function buildAttendanceSummaries(
       }
 
       const label = displayForSku(line.sku, line.displayName, skuDisplay);
-      const key = line.sku || line.variantId || label;
+      const key = lineSkuAggregationKey(line, skuDisplay);
       const prev = agg.skuMap.get(key);
       const addQty = line.quantity;
       if (prev) {
@@ -137,6 +235,65 @@ export function buildAttendanceSummaries(
       byProduct.get(pid)?.orderIds.add(order.orderId);
     }
   }
+
+  // #region agent log
+  try {
+    const allowKeys = Object.keys(effectiveAllowlist);
+    if (allowKeys.length > 0) {
+      const allLinePids = new Set<string>();
+      const excludedKeysSample: Record<string, string[]> = {};
+      let sampleForAllowlistPid: { sku: string; aggKey: string } | null = null;
+      const targetPid = allowKeys[0];
+      outerSample: for (const order of orders) {
+        for (const line of order.lines) {
+          if (line.productId?.trim() === targetPid) {
+            sampleForAllowlistPid = {
+              sku: line.sku,
+              aggKey: lineSkuAggregationKey(line, skuDisplay),
+            };
+            break outerSample;
+          }
+        }
+      }
+      for (const order of orders) {
+        for (const line of order.lines) {
+          const pid = line.productId?.trim();
+          if (!pid) continue;
+          allLinePids.add(pid);
+          const allowed = effectiveAllowlist[pid];
+          if (!allowed?.length) continue;
+          const key = lineSkuAggregationKey(line, skuDisplay);
+          if (!allowed.includes(key)) {
+            if (!excludedKeysSample[pid]) excludedKeysSample[pid] = [];
+            if (excludedKeysSample[pid].length < 8) excludedKeysSample[pid].push(key);
+          }
+        }
+      }
+      const payload = {
+        sessionId: '0dcbc7',
+        runId: 'attendance-summary',
+        hypothesisId: 'H2-H4',
+        location: 'checkin-attendance.ts:buildAttendanceSummaries',
+        message: 'allowlist vs order productIds and excluded sku keys',
+        data: {
+          allowlistKeys: allowKeys,
+          allowlistKeySeenOnAnyOrderLine: allowKeys.map((k) => ({ key: k, seen: allLinePids.has(k) })),
+          firstAllowlistProductSampleLine: sampleForAllowlistPid,
+          excludedAggregationKeysSample: excludedKeysSample,
+        },
+        timestamp: Date.now(),
+      };
+      console.log('[debug-0dcbc7]', JSON.stringify(payload));
+      fetch('http://127.0.0.1:7243/ingest/b643a5d8-d250-477e-88dd-d10cc6efdfdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '0dcbc7' },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }
+  } catch {
+    /* ignore debug */
+  }
+  // #endregion
 
   const summaries: EventAttendanceSummary[] = [];
 
@@ -170,8 +327,15 @@ export function buildEventAttendanceLines(
   orders: NormalizedOrder[],
   productId: string,
   skuDisplay: Record<string, string>,
-  skuPartySize: Record<string, number>
+  skuPartySize: Record<string, number>,
+  productSkuAllowlist: Record<string, string[]>
 ): EventAttendanceLine[] {
+  const { effective: effectiveAllowlist } = expandProductSkuAllowlistAliases(
+    orders,
+    productSkuAllowlist,
+    skuDisplay
+  );
+
   const rows: EventAttendanceLine[] = [];
   const pid = productId.trim();
 
@@ -181,7 +345,8 @@ export function buildEventAttendanceLines(
 
     for (const line of order.lines) {
       if (line.productId?.trim() !== pid) continue;
-      const skuKey = line.sku || line.variantId || line.displayName;
+      if (!lineMatchesProductSkuAllowlist(pid, line, effectiveAllowlist, skuDisplay)) continue;
+      const skuKey = lineSkuAggregationKey(line, skuDisplay);
       const partySize = line.sku ? skuPartySize[line.sku] ?? 1 : 1;
       rows.push({
         orderId: order.orderId,

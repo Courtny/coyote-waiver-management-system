@@ -49,6 +49,27 @@ function parseEventsJson(raw: string | undefined): CheckinEventOption[] {
   }
 }
 
+/** Webflow product id → allowed variant SKU keys (same strings as order line sku / fallback key). */
+function parseProductSkuAllowlist(raw: string | undefined): Record<string, string[]> {
+  if (!raw?.trim()) return {};
+  try {
+    const obj = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<string, string[]> = {};
+    for (const [productId, v] of Object.entries(obj)) {
+      const pid = productId.trim();
+      if (!pid) continue;
+      if (!Array.isArray(v)) continue;
+      const skus = v
+        .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+        .map((x) => x.trim());
+      if (skus.length > 0) out[pid] = skus;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 export function getCheckinConfig() {
   return {
     webflowToken: process.env.WEBFLOW_API_TOKEN || '',
@@ -56,6 +77,7 @@ export function getCheckinConfig() {
     skuPartySize: parseJsonMap(process.env.CHECKIN_SKU_PARTY_SIZE),
     skuDisplay: parseJsonStringMap(process.env.CHECKIN_SKU_DISPLAY),
     events: parseEventsJson(process.env.CHECKIN_EVENTS_JSON),
+    productSkuAllowlist: parseProductSkuAllowlist(process.env.CHECKIN_PRODUCT_SKU_ALLOWLIST_JSON),
     cacheTtlMs: Math.max(60_000, Number(process.env.CHECKIN_CACHE_TTL_MS) || 7 * 60_000),
   };
 }
