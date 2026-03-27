@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
       data: {
         envVarPresent: Boolean(raw?.trim()),
         envVarLength: raw?.length ?? 0,
+        parseLikelyFailed:
+          Boolean(raw?.trim()) && Object.keys(productSkuAllowlist).length === 0,
         parsedKeyCount: Object.keys(productSkuAllowlist).length,
         parsedKeys: Object.keys(productSkuAllowlist),
         skuCountPerKey: Object.fromEntries(
