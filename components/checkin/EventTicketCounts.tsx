@@ -15,10 +15,6 @@ import {
 } from 'lucide-react';
 import type { EventAttendanceLine } from '@/lib/checkin-attendance';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
-import {
-  TICKET_TABLE_COLUMN_LABELS,
-  useTicketTableColumnResize,
-} from '@/components/checkin/useTicketTableColumnResize';
 
 type SkuBreakdownRow = {
   sku: string;
@@ -163,8 +159,6 @@ function EventDetailPanel({
     setIncludedSkus(new Set());
   };
 
-  const { colWidths, onResizePointerDown, resetWidths } = useTicketTableColumnResize();
-
   return (
     <div className="space-y-4">
       <button
@@ -282,77 +276,34 @@ function EventDetailPanel({
                 aria-label="Search by order ID, email, or customer name"
               />
             </div>
-            <button
-              type="button"
-              className="btn btn-secondary text-sm shrink-0 self-start sm:self-auto"
-              onClick={resetWidths}
-            >
-              Reset column widths
-            </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed border-collapse min-w-[800px]">
+            <table className="w-full table-fixed border-collapse">
               <colgroup>
-                {colWidths.map((w, i) => (
-                  <col key={i} style={{ width: w }} />
-                ))}
+                <col className="w-[5.5rem]" />
+                <col className="w-10" />
+                <col className="w-[10rem]" />
+                <col className="w-[24%]" />
+                <col className="w-[30%]" />
+                <col className="w-14" />
+                <col className="w-[12%]" />
+                <col className="w-40" />
               </colgroup>
               <thead>
                 <tr className="border-b-2 border-gray-200">
-                  <th className="relative px-4 py-3 text-left text-gray-700 font-semibold" scope="col">
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold" scope="col">
                     <span className="sr-only">Image</span>
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[0]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(0)}
-                    />
                   </th>
-                  <th className="relative px-2 py-3 text-left text-gray-700 font-semibold" scope="col">
+                  <th className="px-2 py-3 text-left text-gray-700 font-semibold" scope="col">
                     <span className="sr-only">Waiver</span>
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[1]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(1)}
-                    />
                   </th>
-                  <th className="relative px-4 py-3 text-left text-gray-700 font-semibold">
-                    SKU / ticket
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[2]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(2)}
-                    />
-                  </th>
-                  <th className="relative px-4 py-3 text-left text-gray-700 font-semibold">
-                    Customer
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[3]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(3)}
-                    />
-                  </th>
-                  <th className="relative px-4 py-3 text-left text-gray-700 font-semibold">
-                    Email
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[4]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(4)}
-                    />
-                  </th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Customer</th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Email</th>
                   <th
                     scope="col"
-                    className="relative px-4 py-3 text-right text-gray-700 font-semibold"
+                    className="px-3 py-3 text-right text-gray-700 font-semibold"
                     aria-sort={sortKey === 'quantity' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     <button
@@ -372,27 +323,11 @@ function EventDetailPanel({
                         <ArrowUpDown size={16} className="shrink-0 text-gray-400 opacity-70" aria-hidden />
                       )}
                     </button>
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[5]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(5)}
-                    />
                   </th>
-                  <th className="relative px-4 py-3 text-left text-gray-700 font-semibold">
-                    Order
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      aria-label={`Resize ${TICKET_TABLE_COLUMN_LABELS[6]} column`}
-                      className="absolute right-0 top-0 bottom-0 z-10 w-1.5 cursor-col-resize select-none touch-none hover:bg-blue-300/50"
-                      onPointerDown={onResizePointerDown(6)}
-                    />
-                  </th>
+                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Order</th>
                   <th
                     scope="col"
-                    className="px-4 py-3 text-left text-gray-700 font-semibold"
+                    className="px-3 py-3 text-left text-gray-700 font-semibold"
                     aria-sort={sortKey === 'date' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     <button
@@ -442,21 +377,21 @@ function EventDetailPanel({
                       key={`${row.orderId}-${row.sku}-${i}`}
                       className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-4 py-3 align-middle">
+                      <td className="px-3 py-3 align-middle">
                         {row.imageUrl ? (
                           <img
                             src={row.imageUrl}
                             alt={row.displayName}
-                            className="h-10 w-10 rounded-md object-cover border border-gray-200 bg-white"
+                            className="h-14 w-14 rounded-md object-cover border border-gray-200 bg-white"
                           />
                         ) : (
                           <div
-                            className="h-10 w-10 rounded-md border border-dashed border-gray-200 bg-gray-50"
+                            className="h-14 w-14 rounded-md border border-dashed border-gray-200 bg-gray-50"
                             aria-hidden
                           />
                         )}
                       </td>
-                      <td className="px-2 py-3 align-middle w-10">
+                      <td className="px-2 py-3 align-middle">
                         {row.waiverIndicator ? (
                           <span
                             title={row.waiverIndicator.tooltip}
@@ -477,21 +412,27 @@ function EventDetailPanel({
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium min-w-0 align-top">
-                        <div className="text-gray-900 break-words">{row.displayName}</div>
+                      <td className="px-3 py-3 font-medium align-top min-w-0 max-w-[10rem]">
+                        <div className="text-gray-900 text-sm leading-snug break-words">{row.displayName}</div>
                         {row.sku && (
                           <div className="text-xs text-gray-500 font-mono mt-0.5 break-all">{row.sku}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 min-w-0 align-top break-words">
+                      <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-words">
                         {row.customerName}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 min-w-0 align-top break-all">{row.customerEmail}</td>
-                      <td className="px-4 py-3 text-right text-gray-600 font-medium">{row.quantity}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600 min-w-0 align-top break-all">
+                      <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-all">
+                        {row.customerEmail}
+                      </td>
+                      <td className="px-3 py-3 text-right text-gray-600 font-medium align-top">
+                        {row.quantity}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-xs text-gray-600 align-top break-all min-w-0">
                         {row.orderId}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatOrderDate(row.orderedAt)}</td>
+                      <td className="px-3 py-3 text-gray-600 whitespace-nowrap align-top">
+                        {formatOrderDate(row.orderedAt)}
+                      </td>
                     </tr>
                   ))
                 )}
