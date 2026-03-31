@@ -10,6 +10,8 @@ export type WebflowPurchasedItem = {
   variantName?: string;
   variantSKU?: string;
   variantImage?: { url?: string; file?: { variants?: unknown[] } };
+  /** Line total (often same Money shape as order `customerPaid`). */
+  rowTotal?: { value?: unknown; unit?: string; string?: string };
 };
 
 export type WebflowOrderRaw = {
@@ -17,8 +19,9 @@ export type WebflowOrderRaw = {
   acceptedOn?: string | null;
   customerInfo?: { fullName?: string; email?: string };
   billingAddress?: { addressee?: string };
-  /** Total paid; Webflow uses `value` + `unit` (e.g. USD). */
+  /** Total paid; Webflow uses `value` + `unit` + human `string`. */
   customerPaid?: { value?: unknown; unit?: string; string?: string };
+  netAmount?: { value?: unknown; unit?: string; string?: string };
   purchasedItems?: WebflowPurchasedItem[];
 };
 
@@ -38,9 +41,9 @@ export type NormalizedOrder = {
   customerEmail: string;
   customerFullName: string;
   billingAddressee: string;
-  /** Amount from order `customerPaid.value`; 0 when missing or unparsable. */
+  /** Best-effort order total in major currency units (e.g. dollars). */
   customerPaidAmount: number;
-  /** ISO currency code when present on `customerPaid.unit`. */
+  /** ISO currency code when known. */
   customerPaidCurrency?: string;
   lines: NormalizedLineItem[];
 };
@@ -62,13 +65,107 @@ function num(v: unknown, fallback = 0): number {
   return fallback;
 }
 
-function parseCustomerPaid(raw: unknown): { amount: number; currency?: string } {
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  'BIF',
+  'CLP',
+  'DJF',
+  'GNF',
+  'JPY',
+  'KMF',
+  'KRW',
+  'MGA',
+  'PYG',
+  'RWF',
+  'UGX',
+  'VND',
+  'VUV',
+  'XAF',
+  'XOF',
+  'XPF',
+]);
+
+function currencyMinorExponent(unit: string): number {
+  const u = unit.trim().toUpperCase();
+  if (!u) return 2;
+  return ZERO_DECIMAL_CURRENCIES.has(u) ? 0 : 2;
+}
+
+/** Parse Webflow Money `string` (e.g. "$1,234.56") into a major-unit number. */
+function parseMoneyDisplayString(s: string): number | null {
+  const t = s.trim().replace(/\u00a0/g, ' ');
+  if (!t) return null;
+  const noSym = t.replace(/[$€£¥]/g, '').trim();
+  const normalized = noSym.replace(/,/g, '');
+  const n = parseFloat(normalized.replace(/[^\d.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Parse Webflow Order "Money" objects (`value`, `unit`, `string`).
+ * Prefer `string` (major units). For bare numeric `value`, Webflow often sends **minor units**
+ * (e.g. cents) for currencies with 2 decimal places — controlled by `useMinorUnits` from
+ * CHECKIN_WEBFLOW_MONEY_MINOR_UNITS (default on).
+ */
+export function parseWebflowMoney(raw: unknown, useMinorUnits: boolean): { amount: number; currency?: string } {
   const r = asRecord(raw);
   if (!r) return { amount: 0 };
-  const amount = num(r.value, NaN);
-  if (!Number.isFinite(amount)) return { amount: 0 };
-  const unit = str(r.unit).toUpperCase();
-  return unit ? { amount, currency: unit } : { amount };
+  const unit = str(r.unit ?? r['currency']).toUpperCase();
+  const display = str(r.string);
+  if (display) {
+    const parsed = parseMoneyDisplayString(display);
+    if (parsed != null) {
+      return { amount: parsed, ...(unit ? { currency: unit } : {}) };
+    }
+  }
+
+  const v = r.value;
+  if (typeof v === 'string') {
+    const vs = v.trim();
+    if (vs.includes('.') || vs.includes(',')) {
+      const normalized = vs.includes(',') && !vs.includes('.') ? vs.replace(',', '.') : vs.replace(/,/g, '');
+      const n = parseFloat(normalized);
+      if (Number.isFinite(n)) return { amount: n, ...(unit ? { currency: unit } : {}) };
+    }
+  }
+
+  const n = num(v, NaN);
+  if (!Number.isFinite(n)) return { amount: 0 };
+
+  const exp = currencyMinorExponent(unit || 'USD');
+  if (exp > 0 && useMinorUnits && Number.isInteger(n)) {
+    return { amount: n / 10 ** exp, ...(unit ? { currency: unit } : {}) };
+  }
+
+  return { amount: n, ...(unit ? { currency: unit } : {}) };
+}
+
+function orderSpendFromRaw(o: Record<string, unknown>): { amount: number; currency?: string } {
+  const { webflowMoneyMinorUnits: minor } = getCheckinConfig();
+
+  const paid = parseWebflowMoney(o.customerPaid ?? o.customer_paid, minor);
+  const net = parseWebflowMoney(o.netAmount ?? o.net_amount, minor);
+
+  const items = Array.isArray(o.purchasedItems) ? o.purchasedItems : [];
+  let linesSum = 0;
+  let lineCurrency: string | undefined;
+  for (const item of items) {
+    const row = asRecord(item);
+    if (!row) continue;
+    const line = parseWebflowMoney(row.rowTotal ?? row.row_total, minor);
+    linesSum += line.amount;
+    if (!lineCurrency && line.currency) lineCurrency = line.currency;
+  }
+
+  if (paid.amount > 0) {
+    return { amount: paid.amount, currency: paid.currency ?? lineCurrency };
+  }
+  if (net.amount > 0) {
+    return { amount: net.amount, currency: net.currency ?? lineCurrency };
+  }
+  if (linesSum > 0) {
+    return { amount: linesSum, currency: lineCurrency };
+  }
+  return { amount: 0, currency: lineCurrency };
 }
 
 /** Resolve hosted image URL from Webflow order line `variantImage`. */
@@ -99,7 +196,7 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
   const items = Array.isArray(o.purchasedItems) ? o.purchasedItems : [];
   const lines: NormalizedLineItem[] = [];
 
-  const paid = parseCustomerPaid(o.customerPaid ?? o['customer_paid']);
+  const spend = orderSpendFromRaw(o);
 
   for (const item of items) {
     const row = asRecord(item);
@@ -127,8 +224,8 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
     customerEmail: str(customerInfo?.email).toLowerCase(),
     customerFullName: str(customerInfo?.fullName),
     billingAddressee: str(billing?.addressee),
-    customerPaidAmount: paid.amount,
-    ...(paid.currency ? { customerPaidCurrency: paid.currency } : {}),
+    customerPaidAmount: spend.amount,
+    ...(spend.currency ? { customerPaidCurrency: spend.currency } : {}),
     lines,
   };
 }

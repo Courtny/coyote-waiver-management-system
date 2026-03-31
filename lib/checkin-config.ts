@@ -49,6 +49,13 @@ function parseEventsJson(raw: string | undefined): CheckinEventOption[] {
   }
 }
 
+function parseMoneyMinorUnitsFlag(raw: string | undefined): boolean {
+  if (raw === undefined || raw === '') return true;
+  const v = raw.trim().toLowerCase();
+  if (v === '0' || v === 'false' || v === 'no') return false;
+  return true;
+}
+
 export function getCheckinConfig() {
   return {
     webflowToken: process.env.WEBFLOW_API_TOKEN || '',
@@ -57,6 +64,12 @@ export function getCheckinConfig() {
     skuDisplay: parseJsonStringMap(process.env.CHECKIN_SKU_DISPLAY),
     events: parseEventsJson(process.env.CHECKIN_EVENTS_JSON),
     cacheTtlMs: Math.max(60_000, Number(process.env.CHECKIN_CACHE_TTL_MS) || 7 * 60_000),
+    /**
+     * When true (default), Webflow `value` fields without a `string` are treated as minor units
+     * (e.g. cents) for currencies with 2 decimal places. Set CHECKIN_WEBFLOW_MONEY_MINOR_UNITS=0
+     * if your API already returns major units as integers.
+     */
+    webflowMoneyMinorUnits: parseMoneyMinorUnitsFlag(process.env.CHECKIN_WEBFLOW_MONEY_MINOR_UNITS),
   };
 }
 

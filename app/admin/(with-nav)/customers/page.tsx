@@ -107,8 +107,14 @@ export default function AdminCustomersLeaderboardPage() {
       backHref="/admin/dashboard"
       description={
         <>
-          Ranked by total spend (Webflow <code className="text-sm bg-gray-100 px-1 rounded">customerPaid</code>)
-          and total line quantity across all products.{' '}
+          Spend uses Webflow order totals (prefer <code className="text-sm bg-gray-100 px-1 rounded">customerPaid</code>
+          , then <code className="text-sm bg-gray-100 px-1 rounded">netAmount</code>
+          , else sum of line <code className="text-sm bg-gray-100 px-1 rounded">rowTotal</code>). Amounts prefer the
+          formatted <code className="text-sm bg-gray-100 px-1 rounded">string</code> field; bare integer{' '}
+          <code className="text-sm bg-gray-100 px-1 rounded">value</code> is treated as cents for USD-like currencies.
+          If totals look wrong, set env{' '}
+          <code className="text-sm bg-gray-100 px-1 rounded">CHECKIN_WEBFLOW_MONEY_MINOR_UNITS=0</code>. Ticket qty is
+          the sum of all line quantities.{' '}
           <Link href="/admin/tickets" className="font-medium text-blue-600 hover:text-blue-800">
             Event ticket counts →
           </Link>
