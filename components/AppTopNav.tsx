@@ -30,6 +30,11 @@ const items: NavItem[] = [
     isActive: (p) => p.startsWith('/admin/tickets'),
   },
   {
+    href: '/admin/customers',
+    label: 'Top customers',
+    isActive: (p) => p.startsWith('/admin/customers'),
+  },
+  {
     href: '/admin/users',
     label: 'Admin',
     sublabel: 'Manage Users',
@@ -103,7 +108,13 @@ export default function AppTopNav() {
                       ) : null}
                     </span>
                     <span className="xl:hidden">
-                      {href === '/admin/tickets' ? 'Tickets' : href === '/admin/users' ? 'Users' : label}
+                      {href === '/admin/tickets'
+                        ? 'Tickets'
+                        : href === '/admin/users'
+                          ? 'Users'
+                          : href === '/admin/customers'
+                            ? 'Customers'
+                            : label}
                     </span>
                   </Link>
                 </li>

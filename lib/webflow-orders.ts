@@ -17,6 +17,8 @@ export type WebflowOrderRaw = {
   acceptedOn?: string | null;
   customerInfo?: { fullName?: string; email?: string };
   billingAddress?: { addressee?: string };
+  /** Total paid; Webflow uses `value` + `unit` (e.g. USD). */
+  customerPaid?: { value?: unknown; unit?: string; string?: string };
   purchasedItems?: WebflowPurchasedItem[];
 };
 
@@ -36,6 +38,10 @@ export type NormalizedOrder = {
   customerEmail: string;
   customerFullName: string;
   billingAddressee: string;
+  /** Amount from order `customerPaid.value`; 0 when missing or unparsable. */
+  customerPaidAmount: number;
+  /** ISO currency code when present on `customerPaid.unit`. */
+  customerPaidCurrency?: string;
   lines: NormalizedLineItem[];
 };
 
@@ -54,6 +60,15 @@ function num(v: unknown, fallback = 0): number {
     return Number.isFinite(n) ? n : fallback;
   }
   return fallback;
+}
+
+function parseCustomerPaid(raw: unknown): { amount: number; currency?: string } {
+  const r = asRecord(raw);
+  if (!r) return { amount: 0 };
+  const amount = num(r.value, NaN);
+  if (!Number.isFinite(amount)) return { amount: 0 };
+  const unit = str(r.unit).toUpperCase();
+  return unit ? { amount, currency: unit } : { amount };
 }
 
 /** Resolve hosted image URL from Webflow order line `variantImage`. */
@@ -84,6 +99,8 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
   const items = Array.isArray(o.purchasedItems) ? o.purchasedItems : [];
   const lines: NormalizedLineItem[] = [];
 
+  const paid = parseCustomerPaid(o.customerPaid ?? o['customer_paid']);
+
   for (const item of items) {
     const row = asRecord(item);
     if (!row) continue;
@@ -110,6 +127,8 @@ export function normalizeWebflowOrder(raw: unknown): NormalizedOrder | null {
     customerEmail: str(customerInfo?.email).toLowerCase(),
     customerFullName: str(customerInfo?.fullName),
     billingAddressee: str(billing?.addressee),
+    customerPaidAmount: paid.amount,
+    ...(paid.currency ? { customerPaidCurrency: paid.currency } : {}),
     lines,
   };
 }
