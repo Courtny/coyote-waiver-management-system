@@ -136,6 +136,14 @@ For purchase history on **Check-In** and rollups on **Ticket counts**, you need 
 
 If Webflow env vars are omitted, waiver lookup still works; purchases will be empty.
 
+### Webflow Embed Snippets
+
+For marketing-site embeds that show public Open Play counts, use:
+
+- `embeds/webflow-open-play-ticker.html` — compact black ribbon / ticker bar snippet for Webflow Embed blocks.
+- Data source: `GET /api/open-play/counts` (CORS-enabled for `https://coyoteforce.com` and `https://www.coyoteforce.com` by default; see `.env.example` for `OPEN_PLAY_CORS_ORIGINS`).
+- Required Open Play vars: `OPEN_PLAY_PRODUCT_ID` plus either `OPEN_PLAY_VARIANT_DAYS_JSON` or `OPEN_PLAY_SKU_DAYS_JSON`.
+
 ## Deployment
 
 **📖 See [DEPLOYMENT.md](./DEPLOYMENT.md) for production hosting, domains, and env vars.** Local bootstrap: [SETUP.md](./SETUP.md).
