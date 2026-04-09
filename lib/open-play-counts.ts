@@ -42,8 +42,24 @@ export type OpenPlayAggregates = {
   sunday: number;
 };
 
+/** When Webflow order lines use the same base SKU for Sat/Sun, day often appears in the variant display name. */
+function inferDayFromLabel(text: string): OpenPlaySkuDay | undefined {
+  const t = text.toLowerCase();
+  if (/\bsaturday\b/.test(t)) return 'saturday';
+  if (/\bsunday\b/.test(t)) return 'sunday';
+  return undefined;
+}
+
+/** e.g. open-play-airsoft-admission-only-saturday */
+function inferDayFromSkuSuffix(sku: string): OpenPlaySkuDay | undefined {
+  const s = sku.toLowerCase();
+  if (s.endsWith('-saturday') || s.endsWith('_saturday')) return 'saturday';
+  if (s.endsWith('-sunday') || s.endsWith('_sunday')) return 'sunday';
+  return undefined;
+}
+
 function resolveOpenPlayDay(
-  line: { variantId: string; sku: string },
+  line: { variantId: string; sku: string; displayName: string },
   skuToDay: Record<string, OpenPlaySkuDay>,
   variantToDay: Record<string, OpenPlaySkuDay>
 ): OpenPlaySkuDay | undefined {
@@ -51,7 +67,11 @@ function resolveOpenPlayDay(
   if (vid && variantToDay[vid]) return variantToDay[vid];
   const sku = line.sku?.trim();
   if (sku && skuToDay[sku]) return skuToDay[sku];
-  return undefined;
+  if (sku) {
+    const fromSuffix = inferDayFromSkuSuffix(sku);
+    if (fromSuffix) return fromSuffix;
+  }
+  return inferDayFromLabel(line.displayName ?? '');
 }
 
 export function aggregateOpenPlayTicketCounts(
@@ -135,7 +155,7 @@ export function aggregateOpenPlayTicketCounts(
   };
   const debugPayload = {
     sessionId: '9c411d',
-    hypothesisId: 'H1-H4',
+    hypothesisId: 'H1-H4-postfix',
     location: 'open-play-counts.ts:aggregateOpenPlayTicketCounts',
     message: 'open_play_aggregation',
     data: debugData,
