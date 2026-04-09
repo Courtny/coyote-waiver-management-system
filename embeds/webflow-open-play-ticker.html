@@ -7,6 +7,7 @@
 <div id="cf-open-play-ribbon" class="cf-op-ribbon" aria-live="polite" hidden>
   <div class="cf-op-ribbon__inner">
     <span class="cf-op-ribbon__label">Airsoft Open Play</span>
+    <span class="cf-op-ribbon__loading" data-cf-op-loading>Loading counts…</span>
     <span class="cf-op-ribbon__week" data-cf-op-week></span>
     <span class="cf-op-ribbon__sep" aria-hidden="true">·</span>
     <span class="cf-op-ribbon__stat"
@@ -61,6 +62,12 @@
     font-weight: 500;
     font-size: 0.95em;
   }
+  .cf-op-ribbon__loading {
+    display: none;
+    color: var(--cf-op-muted);
+    font-style: italic;
+    font-size: 0.95em;
+  }
   .cf-op-ribbon__sep {
     color: var(--cf-op-muted);
     user-select: none;
@@ -85,12 +92,16 @@
   .cf-op-ribbon.cf-op-ribbon--loading .cf-op-ribbon__num {
     opacity: 0.35;
   }
+  .cf-op-ribbon.cf-op-ribbon--loading .cf-op-ribbon__loading {
+    display: inline;
+  }
 </style>
 <script>
   (function () {
     var WAIVER_API_ORIGIN = 'https://waiver.coyoteforce.com';
     var root = document.getElementById('cf-open-play-ribbon');
     if (!root) return;
+    var elLoading = root.querySelector('[data-cf-op-loading]');
     var elWeek = root.querySelector('[data-cf-op-week]');
     var elSat = root.querySelector('[data-cf-op-sat]');
     var elSun = root.querySelector('[data-cf-op-sun]');
@@ -109,7 +120,8 @@
           root.hidden = true;
           return;
         }
-        elWeek.textContent = d.weekLabel + ' · Eastern';
+        if (elLoading) elLoading.textContent = '';
+        elWeek.textContent = d.weekLabel;
         elSat.textContent = d.saturdayDisplay;
         elSun.textContent = d.sundayDisplay;
       })
