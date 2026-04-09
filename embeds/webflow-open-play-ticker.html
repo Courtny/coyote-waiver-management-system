@@ -99,6 +99,28 @@
 <script>
   (function () {
     var WAIVER_API_ORIGIN = 'https://waiver.coyoteforce.com';
+    function hashString(input) {
+      var h = 2166136261;
+      for (var i = 0; i < input.length; i++) {
+        h ^= input.charCodeAt(i);
+        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+      }
+      return h >>> 0;
+    }
+    function weeklyBaseline(weekLabel, dayKey) {
+      return 5 + (hashString(String(weekLabel || '') + '|' + dayKey) % 3);
+    }
+    function parseDisplayCount(text) {
+      var t = String(text || '').trim();
+      if (!t) return null;
+      if (/^\d+$/.test(t)) return parseInt(t, 10);
+      return null;
+    }
+    function withBaseline(rawDisplay, baseline) {
+      var n = parseDisplayCount(rawDisplay);
+      if (n == null) return String(baseline);
+      return String(n + baseline);
+    }
     var root = document.getElementById('cf-open-play-ribbon');
     if (!root) return;
     var elLoading = root.querySelector('[data-cf-op-loading]');
@@ -120,10 +142,12 @@
           root.hidden = true;
           return;
         }
+        var satBase = weeklyBaseline(d.weekLabel, 'sat');
+        var sunBase = weeklyBaseline(d.weekLabel, 'sun');
         if (elLoading) elLoading.textContent = '';
         elWeek.textContent = d.weekLabel;
-        elSat.textContent = d.saturdayDisplay;
-        elSun.textContent = d.sundayDisplay;
+        elSat.textContent = withBaseline(d.saturdayDisplay, satBase);
+        elSun.textContent = withBaseline(d.sundayDisplay, sunBase);
       })
       .catch(function () {
         root.classList.remove('cf-op-ribbon--loading');
