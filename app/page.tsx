@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { OpenPlayWeekendCounts } from '@/components/OpenPlayWeekendCounts';
 
 export const metadata = {
   title: 'Coyote Safety Waiver – Sign the Waiver',
@@ -56,6 +57,7 @@ export default function Home() {
               Admin Login
             </Link>
           </div>
+          <OpenPlayWeekendCounts />
         </div>
       </div>
     </div>
