@@ -34,22 +34,6 @@ export async function GET() {
 
   try {
     const { orders, stale } = await getCachedWebflowOrders();
-    // #region agent log
-    const routeDebug = {
-      sessionId: '9c411d',
-      hypothesisId: 'H4',
-      location: 'open-play/counts/route.ts:GET',
-      message: 'webflow_orders_cache',
-      data: { ordersLength: orders.length, stale },
-      timestamp: Date.now(),
-    };
-    fetch('http://127.0.0.1:7894/ingest/b643a5d8-d250-477e-88dd-d10cc6efdfdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '9c411d' },
-      body: JSON.stringify(routeDebug),
-    }).catch(() => {});
-    console.error('[DEBUG_OPEN_PLAY]', JSON.stringify(routeDebug));
-    // #endregion
     const aggregates = aggregateOpenPlayTicketCounts(orders, cfg, skuPartySize, bounds);
     const payload = buildOpenPlayPublicPayload(aggregates, bounds, { configured: true, ordersStale: stale });
 

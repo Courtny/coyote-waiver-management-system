@@ -91,41 +91,14 @@ export function aggregateOpenPlayTicketCounts(
   let saturday = 0;
   let sunday = 0;
 
-  // Debug counters (session 9c411d) — hypothesis: H1 week window, H2 product id, H3 SKU/day map, H4 empty orders
-  let ordersTotal = orders.length;
-  let ordersNullAccepted = 0;
-  let ordersOutsideWeekWindow = 0;
-  let ordersInWeekWindow = 0;
-  let linesProductMatchAnyOrder = 0;
-  let linesProductInWindow = 0;
-  let linesDayMiss = 0;
-  const skuSeenForProduct = new Set<string>();
-
   for (const order of orders) {
     const ts = parseOrderTime(order.acceptedOn);
-    if (ts == null) {
-      ordersNullAccepted++;
-    } else if (!isInstantInRange(ts, bounds.start, bounds.endExclusive)) {
-      ordersOutsideWeekWindow++;
-    } else {
-      ordersInWeekWindow++;
-    }
-
-    const inWindow = ts != null && isInstantInRange(ts, bounds.start, bounds.endExclusive);
+    if (ts == null || !isInstantInRange(ts, bounds.start, bounds.endExclusive)) continue;
 
     for (const line of order.lines) {
       if (line.productId?.trim() !== pid) continue;
-      linesProductMatchAnyOrder++;
-      const skuKey = line.sku?.trim() ?? '';
-      if (skuKey) skuSeenForProduct.add(skuKey);
-      if (!inWindow) continue;
-
-      linesProductInWindow++;
       const day = resolveOpenPlayDay(line, skuToDay, variantToDay);
-      if (!day) {
-        linesDayMiss++;
-        continue;
-      }
+      if (!day) continue;
       const sku = line.sku?.trim() ?? '';
       const party = sku ? skuPartySize[sku] ?? 1 : 1;
       const add = line.quantity * party;
@@ -133,41 +106,6 @@ export function aggregateOpenPlayTicketCounts(
       else sunday += add;
     }
   }
-
-  // #region agent log
-  const debugData = {
-    ordersTotal,
-    ordersNullAccepted,
-    ordersOutsideWeekWindow,
-    ordersInWeekWindow,
-    linesProductMatchAnyOrder,
-    linesProductInWindow,
-    linesDayMiss,
-    saturday,
-    sunday,
-    productIdLen: pid.length,
-    productIdSuffix: pid.slice(-6),
-    skuMapKeyCount: Object.keys(skuToDay).length,
-    variantMapKeyCount: Object.keys(variantToDay).length,
-    skuSamplesFromOrders: [...skuSeenForProduct].slice(0, 12),
-    weekStartIso: bounds.start.toISOString(),
-    weekEndExIso: bounds.endExclusive.toISOString(),
-  };
-  const debugPayload = {
-    sessionId: '9c411d',
-    hypothesisId: 'H1-H4-postfix',
-    location: 'open-play-counts.ts:aggregateOpenPlayTicketCounts',
-    message: 'open_play_aggregation',
-    data: debugData,
-    timestamp: Date.now(),
-  };
-  fetch('http://127.0.0.1:7894/ingest/b643a5d8-d250-477e-88dd-d10cc6efdfdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '9c411d' },
-    body: JSON.stringify(debugPayload),
-  }).catch(() => {});
-  console.error('[DEBUG_OPEN_PLAY]', JSON.stringify(debugPayload));
-  // #endregion
 
   return { saturday, sunday };
 }
