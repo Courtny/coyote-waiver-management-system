@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { openPlayCorsHeaders } from '@/lib/open-play-cors';
 import {
   aggregateOpenPlayTicketCounts,
   buildOpenPlayPublicPayload,
@@ -10,7 +11,21 @@ import { getOpenPlayConfig, isOpenPlayConfigured } from '@/lib/open-play-config'
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+function mergeHeaders(
+  request: NextRequest,
+  extra: Record<string, string>
+): Record<string, string> {
+  return { ...openPlayCorsHeaders(request), ...extra };
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: mergeHeaders(request, {}),
+  });
+}
+
+export async function GET(request: NextRequest) {
   const configured = isOpenPlayConfigured();
   const bounds = getReportingWeekBounds();
 
@@ -22,9 +37,9 @@ export async function GET() {
         { configured: false, ordersStale: false }
       ),
       {
-        headers: {
+        headers: mergeHeaders(request, {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-        },
+        }),
       }
     );
   }
@@ -38,9 +53,9 @@ export async function GET() {
     const payload = buildOpenPlayPublicPayload(aggregates, bounds, { configured: true, ordersStale: stale });
 
     return NextResponse.json(payload, {
-      headers: {
+      headers: mergeHeaders(request, {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-      },
+      }),
     });
   } catch (e) {
     console.error('open-play/counts:', e);
@@ -52,9 +67,9 @@ export async function GET() {
       ),
       {
         status: 200,
-        headers: {
+        headers: mergeHeaders(request, {
           'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-        },
+        }),
       }
     );
   }
