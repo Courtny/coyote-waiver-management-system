@@ -1,0 +1,121 @@
+<!--
+  Coyote Force — Open Play weekend counts (black ribbon / ticker bar)
+  Paste into Webflow: Embed → Custom code (entire block).
+
+  Set WAIVER_API_ORIGIN below if your waiver app URL differs.
+-->
+<div id="cf-open-play-ribbon" class="cf-op-ribbon" aria-live="polite" hidden>
+  <div class="cf-op-ribbon__inner">
+    <span class="cf-op-ribbon__label">Airsoft Open Play</span>
+    <span class="cf-op-ribbon__week" data-cf-op-week></span>
+    <span class="cf-op-ribbon__sep" aria-hidden="true">·</span>
+    <span class="cf-op-ribbon__stat"
+      ><span class="cf-op-ribbon__day">Sat</span>
+      <strong class="cf-op-ribbon__num" data-cf-op-sat>—</strong></span
+    >
+    <span class="cf-op-ribbon__sep" aria-hidden="true">·</span>
+    <span class="cf-op-ribbon__stat"
+      ><span class="cf-op-ribbon__day">Sun</span>
+      <strong class="cf-op-ribbon__num" data-cf-op-sun>—</strong></span
+    >
+  </div>
+</div>
+<style>
+  .cf-op-ribbon {
+    --cf-op-bg: #0a0a0a;
+    --cf-op-fg: rgba(255, 255, 255, 0.92);
+    --cf-op-muted: rgba(255, 255, 255, 0.55);
+    --cf-op-accent: #e8a317;
+    --cf-op-border: rgba(255, 255, 255, 0.08);
+    box-sizing: border-box;
+    width: 100%;
+    background: var(--cf-op-bg);
+    color: var(--cf-op-fg);
+    border-bottom: 1px solid var(--cf-op-border);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+      sans-serif;
+    font-size: clamp(0.75rem, 0.65rem + 0.35vw, 0.875rem);
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+  }
+  .cf-op-ribbon__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.5rem 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem 0.75rem;
+    text-align: center;
+  }
+  .cf-op-ribbon__label {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7em;
+    color: var(--cf-op-accent);
+  }
+  .cf-op-ribbon__week {
+    color: var(--cf-op-muted);
+    font-weight: 500;
+    font-size: 0.95em;
+  }
+  .cf-op-ribbon__sep {
+    color: var(--cf-op-muted);
+    user-select: none;
+  }
+  .cf-op-ribbon__stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+  .cf-op-ribbon__day {
+    color: var(--cf-op-muted);
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cf-op-ribbon__num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--cf-op-fg);
+  }
+  .cf-op-ribbon.cf-op-ribbon--loading .cf-op-ribbon__num {
+    opacity: 0.35;
+  }
+</style>
+<script>
+  (function () {
+    var WAIVER_API_ORIGIN = 'https://waiver.coyoteforce.com';
+    var root = document.getElementById('cf-open-play-ribbon');
+    if (!root) return;
+    var elWeek = root.querySelector('[data-cf-op-week]');
+    var elSat = root.querySelector('[data-cf-op-sat]');
+    var elSun = root.querySelector('[data-cf-op-sun]');
+
+    root.hidden = false;
+    root.classList.add('cf-op-ribbon--loading');
+
+    fetch(WAIVER_API_ORIGIN + '/api/open-play/counts', { credentials: 'omit' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('bad status');
+        return r.json();
+      })
+      .then(function (d) {
+        root.classList.remove('cf-op-ribbon--loading');
+        if (!d || !d.configured) {
+          root.hidden = true;
+          return;
+        }
+        elWeek.textContent = d.weekLabel + ' · Eastern';
+        elSat.textContent = d.saturdayDisplay;
+        elSun.textContent = d.sundayDisplay;
+      })
+      .catch(function () {
+        root.classList.remove('cf-op-ribbon--loading');
+        root.hidden = true;
+      });
+  })();
+</script>
