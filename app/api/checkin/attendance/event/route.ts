@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildEventAttendanceLines, resolveEventTitle } from '@/lib/checkin-attendance';
+import { buildEventAttendanceLines, flagEventPatchRecipients, resolveEventTitle } from '@/lib/checkin-attendance';
 import { enrichAttendanceLinesWithWaiverIndicators } from '@/lib/attendance-waiver-enrich';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
@@ -23,6 +23,15 @@ export async function GET(request: NextRequest) {
     const rawLines = buildEventAttendanceLines(orders, productId, skuDisplay, skuPartySize);
     const lines = await enrichAttendanceLinesWithWaiverIndicators(rawLines, currentYear);
     const title = resolveEventTitle(productId, orders, events);
+
+    const variantIds = new Set<string>();
+    for (const o of orders)
+      for (const l of o.lines)
+        if (l.productId?.trim() === productId && l.variantId) variantIds.add(l.variantId);
+    const eventCfg = events.find((e) => e.id === productId || variantIds.has(e.id));
+    if (eventCfg?.eventPatchCount) {
+      flagEventPatchRecipients(lines, eventCfg.eventPatchCount);
+    }
 
     return NextResponse.json({
       productId,

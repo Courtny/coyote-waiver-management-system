@@ -417,6 +417,11 @@ function EventDetailPanel({
                         {row.sku && (
                           <div className="text-xs text-gray-500 font-mono mt-0.5 break-all">{row.sku}</div>
                         )}
+                        {row.receivesEventPatch && (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-xs font-medium text-amber-800 mt-1">
+                            Receives Event Patch
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-words">
                         {row.customerName}

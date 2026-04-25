@@ -34,6 +34,7 @@ export type EventAttendanceLine = {
   partySize: number;
   imageUrl?: string;
   waiverIndicator?: WaiverIndicatorDto;
+  receivesEventPatch?: boolean;
 };
 
 function displayForSku(sku: string, displayName: string, skuDisplay: Record<string, string>): string {
@@ -207,4 +208,21 @@ export function buildEventAttendanceLines(
   });
 
   return rows;
+}
+
+/** Flag the earliest `patchCount` lines (by order date) as event-patch recipients. */
+export function flagEventPatchRecipients(lines: EventAttendanceLine[], patchCount: number): void {
+  if (patchCount <= 0 || lines.length === 0) return;
+
+  const byDate = [...lines].sort((a, b) => {
+    const ta = a.orderedAt ? Date.parse(a.orderedAt) : 0;
+    const tb = b.orderedAt ? Date.parse(b.orderedAt) : 0;
+    if (ta !== tb) return ta - tb;
+    return a.orderId.localeCompare(b.orderId, undefined, { sensitivity: 'base' });
+  });
+
+  const limit = Math.min(patchCount, byDate.length);
+  for (let i = 0; i < limit; i++) {
+    byDate[i].receivesEventPatch = true;
+  }
 }

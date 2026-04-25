@@ -1,4 +1,4 @@
-export type CheckinEventOption = { id: string; label: string };
+export type CheckinEventOption = { id: string; label: string; eventPatchCount?: number };
 
 function parseJsonMap(raw: string | undefined): Record<string, number> {
   if (!raw?.trim()) return {};
@@ -41,7 +41,9 @@ function parseEventsJson(raw: string | undefined): CheckinEventOption[] {
         const id = typeof o.id === 'string' ? o.id : '';
         const label = typeof o.label === 'string' ? o.label : id;
         if (!id) return null;
-        return { id, label };
+        const rawPatch = typeof o.eventPatchCount === 'number' ? o.eventPatchCount : Number(o.eventPatchCount);
+        const eventPatchCount = Number.isFinite(rawPatch) && rawPatch >= 1 ? Math.floor(rawPatch) : undefined;
+        return { id, label, ...(eventPatchCount ? { eventPatchCount } : {}) };
       })
       .filter(Boolean) as CheckinEventOption[];
   } catch {
