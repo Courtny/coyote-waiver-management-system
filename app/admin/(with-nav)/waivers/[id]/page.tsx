@@ -175,6 +175,9 @@ export default function WaiverDetailPage() {
               <p className="text-gray-700 leading-relaxed">
                 In consideration of being allowed to participate, I hereby release, waive, and discharge C&L Entreprises DBA Coyote Airsoft and Paintball, its owners, employees, and agents from any and all liability, claims, or causes of action for personal injury, property damage, or wrongful death.
               </p>
+              <p className="text-gray-700 leading-relaxed">
+                I understand and agree that C&L Entreprises DBA Coyote Airsoft and Paintball, its owners, employees, and agents are not responsible for any lost or stolen personal property while on the premises, and I assume all risk of loss or theft of my personal belongings.
+              </p>
             </div>
 
             <div className="space-y-4">
