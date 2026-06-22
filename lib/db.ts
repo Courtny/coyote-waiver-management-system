@@ -79,6 +79,22 @@ export async function initDatabase() {
       )
     `);
 
+    // Ticket check-ins (event gate — per order line unit)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ticket_checkins (
+        id SERIAL PRIMARY KEY,
+        "productId" TEXT NOT NULL,
+        "orderId" TEXT NOT NULL,
+        "variantId" TEXT NOT NULL DEFAULT '',
+        "unitIndex" INTEGER NOT NULL,
+        "checkedInAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE ("productId", "orderId", "variantId", "unitIndex")
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ticket_checkins_product ON ticket_checkins("productId")
+    `);
+
     // Create indexes for faster searches
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_waiver_name ON waivers(lastName, firstName)

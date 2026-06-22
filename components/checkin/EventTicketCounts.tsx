@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ArrowUp,
   ArrowUpDown,
+  Check,
   ChevronDown,
   ChevronRight,
   Loader2,
@@ -58,13 +59,92 @@ function rowMatchesLineSearch(row: EventAttendanceLine, queryLower: string): boo
   );
 }
 
+function rowAllCheckedIn(row: EventAttendanceLine): boolean {
+  const checked = row.checkedInUnits?.length ?? 0;
+  return checked >= row.quantity && row.quantity > 0;
+}
+
 type EventDetailPanelProps = {
   detail: { productId: string; title: string; lines: EventAttendanceLine[] };
   detailLoading: boolean;
   ordersStale: boolean;
   webflowError?: string;
   onBack: () => void;
+  onLinesChange: (lines: EventAttendanceLine[]) => void;
 };
+
+function TicketCheckInButtons({
+  row,
+  productId,
+  onCheckedIn,
+}: {
+  row: EventAttendanceLine;
+  productId: string;
+  onCheckedIn: (checkedInUnits: number[]) => void;
+}) {
+  const [pending, setPending] = useState<number | null>(null);
+  const checkedSet = useMemo(() => new Set(row.checkedInUnits ?? []), [row.checkedInUnits]);
+
+  const handleCheckIn = async (unitIndex: number) => {
+    if (checkedSet.has(unitIndex) || pending !== null) return;
+
+    const prev = row.checkedInUnits ?? [];
+    const optimistic = [...prev, unitIndex].sort((a, b) => a - b);
+    onCheckedIn(optimistic);
+    setPending(unitIndex);
+
+    try {
+      const res = await fetch('/api/checkin/attendance/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          order_id: row.orderId,
+          variant_id: row.variantId,
+          unit_index: unitIndex,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onCheckedIn(prev);
+        return;
+      }
+      onCheckedIn(data.checkedInUnits ?? optimistic);
+    } catch {
+      onCheckedIn(prev);
+    } finally {
+      setPending(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1 justify-end">
+      {Array.from({ length: row.quantity }, (_, i) => {
+        const checked = checkedSet.has(i);
+        const isPending = pending === i;
+        return (
+          <button
+            key={i}
+            type="button"
+            disabled={checked || pending !== null}
+            onClick={() => void handleCheckIn(i)}
+            aria-label={checked ? `Ticket ${i + 1} checked in` : `Check in ticket ${i + 1}`}
+            className={
+              'inline-flex h-8 min-w-[2rem] items-center justify-center rounded-md border text-xs font-medium transition-colors ' +
+              (checked
+                ? 'border-green-600 bg-green-600 text-white cursor-default'
+                : isPending
+                  ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:bg-green-50 hover:text-green-800')
+            }
+          >
+            {checked ? <Check size={14} aria-hidden /> : i + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function EventDetailPanel({
   detail,
@@ -72,12 +152,14 @@ function EventDetailPanel({
   ordersStale,
   webflowError,
   onBack,
+  onLinesChange,
 }: EventDetailPanelProps) {
   const [includedSkus, setIncludedSkus] = useState<Set<string>>(() => new Set());
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<'quantity' | 'date'>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [uncheckedOnly, setUncheckedOnly] = useState(false);
 
   useEffect(() => {
     if (detailLoading) return;
@@ -89,7 +171,18 @@ function EventDetailPanel({
     setSearchQuery('');
     setSortKey('date');
     setSortDir('desc');
+    setUncheckedOnly(false);
   }, [detail.productId]);
+
+  const updateLineCheckins = (orderId: string, variantId: string, checkedInUnits: number[]) => {
+    onLinesChange(
+      detail.lines.map((line) =>
+        line.orderId === orderId && line.variantId === variantId
+          ? { ...line, checkedInUnits }
+          : line
+      )
+    );
+  };
 
   const skuOptions = useMemo(() => {
     if (!detail.lines.length) return [] as { skuKey: string; displayName: string }[];
@@ -112,9 +205,22 @@ function EventDetailPanel({
 
   const textFilteredLines = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return filteredLines;
-    return filteredLines.filter((row) => rowMatchesLineSearch(row, q));
-  }, [filteredLines, searchQuery]);
+    let rows = filteredLines;
+    if (uncheckedOnly) {
+      rows = rows.filter((row) => !rowAllCheckedIn(row));
+    }
+    if (!q) return rows;
+    return rows.filter((row) => rowMatchesLineSearch(row, q));
+  }, [filteredLines, searchQuery, uncheckedOnly]);
+
+  const checkedInTotal = useMemo(
+    () => detail.lines.reduce((s, r) => s + (r.checkedInUnits?.length ?? 0), 0),
+    [detail.lines]
+  );
+  const ticketTotal = useMemo(
+    () => detail.lines.reduce((s, r) => s + r.quantity, 0),
+    [detail.lines]
+  );
 
   const sortedLines = useMemo(() => {
     const rows = [...textFilteredLines];
@@ -179,6 +285,10 @@ function EventDetailPanel({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">{detail.title}</h2>
         <p className="text-sm text-gray-600">
+          <span className="font-medium text-gray-800">
+            {checkedInTotal} / {ticketTotal} checked in
+          </span>
+          {' · '}
           {textFilteredLines.length} line{textFilteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
           {filteredLines.length !== detail.lines.length ? (
             <span className="text-gray-500"> (of {detail.lines.length} lines)</span>
@@ -190,7 +300,7 @@ function EventDetailPanel({
       </div>
 
       {detailLoading ? (
-        <TableSkeleton columns={8} rows={10} ariaLabel="Loading ticket lines" />
+        <TableSkeleton columns={9} rows={10} ariaLabel="Loading ticket lines" />
       ) : (
         <>
           {skuOptions.length > 1 ? (
@@ -276,6 +386,15 @@ function EventDetailPanel({
                 aria-label="Search by order ID, email, or customer name"
               />
             </div>
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer shrink-0 pb-1">
+              <input
+                type="checkbox"
+                className="rounded border-gray-300"
+                checked={uncheckedOnly}
+                onChange={(e) => setUncheckedOnly(e.target.checked)}
+              />
+              Show unchecked only
+            </label>
           </div>
 
           <div className="overflow-x-auto">
@@ -289,6 +408,7 @@ function EventDetailPanel({
                 <col className="w-14" />
                 <col className="w-[12%]" />
                 <col className="w-48" />
+                <col className="w-28" />
               </colgroup>
               <thead>
                 <tr className="border-b-2 border-gray-200">
@@ -348,18 +468,21 @@ function EventDetailPanel({
                       )}
                     </button>
                   </th>
+                  <th className="px-3 py-3 text-right text-gray-700 font-semibold" scope="col">
+                    Check in
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {detail.lines.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
                       No line items for this product in cached orders.
                     </td>
                   </tr>
                 ) : includedSkus.size === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
                       No tickets / SKUs selected — choose at least one filter above or use Select all.
                     </td>
                   </tr>
@@ -367,15 +490,28 @@ function EventDetailPanel({
                   textFilteredLines.length === 0 &&
                   searchQuery.trim() ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
                       No rows match your search. Try different order ID, email, or name keywords.
                     </td>
                   </tr>
+                ) : filteredLines.length > 0 &&
+                  textFilteredLines.length === 0 &&
+                  uncheckedOnly ? (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
+                      All visible tickets are checked in.
+                    </td>
+                  </tr>
                 ) : (
-                  sortedLines.map((row, i) => (
+                  sortedLines.map((row, i) => {
+                    const allChecked = rowAllCheckedIn(row);
+                    return (
                     <tr
-                      key={`${row.orderId}-${row.sku}-${i}`}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                      key={`${row.orderId}-${row.variantId}-${row.sku}-${i}`}
+                      className={
+                        'border-b border-gray-200 transition-colors ' +
+                        (allChecked ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50')
+                      }
                     >
                       <td className="px-3 py-3 align-middle">
                         {row.imageUrl ? (
@@ -438,8 +574,18 @@ function EventDetailPanel({
                       <td className="px-3 py-3 text-gray-600 whitespace-nowrap align-top">
                         {formatOrderDate(row.orderedAt)}
                       </td>
+                      <td className="px-3 py-3 align-top">
+                        <TicketCheckInButtons
+                          row={row}
+                          productId={detail.productId}
+                          onCheckedIn={(units) =>
+                            updateLineCheckins(row.orderId, row.variantId, units)
+                          }
+                        />
+                      </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -552,6 +698,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         ordersStale={ordersStale}
         webflowError={webflowError}
         onBack={closeDetail}
+        onLinesChange={(lines) => setDetail((d) => (d ? { ...d, lines } : d))}
       />
     );
   }

@@ -4,6 +4,7 @@ import { enrichAttendanceLinesWithWaiverIndicators } from '@/lib/attendance-waiv
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { attachCheckinStatus, countCheckedInTickets, getCheckinsForProduct } from '@/lib/ticket-checkin';
 import { WebflowOrdersError } from '@/lib/webflow-orders';
 
 export async function GET(request: NextRequest) {
@@ -33,10 +34,16 @@ export async function GET(request: NextRequest) {
       flagEventPatchRecipients(lines, eventCfg.eventPatchCount);
     }
 
+    const checkins = await getCheckinsForProduct(productId);
+    const linesWithCheckins = attachCheckinStatus(lines, checkins);
+    const { checkedInTotal, ticketTotal } = countCheckedInTickets(linesWithCheckins);
+
     return NextResponse.json({
       productId,
       title,
-      lines,
+      lines: linesWithCheckins,
+      checkedInTotal,
+      ticketTotal,
       ordersStale: stale,
       webflowError: error?.message,
     });

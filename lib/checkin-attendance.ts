@@ -28,6 +28,7 @@ export type EventAttendanceLine = {
   customerName: string;
   customerEmail: string;
   sku: string;
+  variantId: string;
   displayName: string;
   quantity: number;
   /** From CHECKIN_SKU_PARTY_SIZE; used for multi-person waiver UI rules. */
@@ -35,6 +36,8 @@ export type EventAttendanceLine = {
   imageUrl?: string;
   waiverIndicator?: WaiverIndicatorDto;
   receivesEventPatch?: boolean;
+  /** Unit indices (0..quantity-1) marked checked in for this line. */
+  checkedInUnits?: number[];
 };
 
 function displayForSku(sku: string, displayName: string, skuDisplay: Record<string, string>): string {
@@ -190,6 +193,7 @@ export function buildEventAttendanceLines(
         customerName: name,
         customerEmail: email,
         sku: skuKey,
+        variantId: line.variantId || '',
         displayName: displayForSku(line.sku, line.displayName, skuDisplay),
         quantity: line.quantity,
         partySize,
