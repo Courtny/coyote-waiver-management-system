@@ -131,7 +131,7 @@ For purchase history on **Check-In** and rollups on **Ticket counts**, you need 
 | `WEBFLOW_SITE_ID` | Site UUID from settings or `GET /v2/sites` |
 | `CHECKIN_SKU_PARTY_SIZE` | Optional JSON map, e.g. `{"my-sku-slug":3}` for party-size hints |
 | `CHECKIN_SKU_DISPLAY` | Optional JSON map `sku → short label` for cleaner line names |
-| `CHECKIN_EVENTS_JSON` | Optional JSON array: `[{"id":"<productOrVariantId>","label":"Saturday game"}]` for gate filter dropdown |
+| `CHECKIN_EVENTS_JSON` | Optional override for gate filter events; canonical list in `config/checkin-events.json` (used when unset/invalid) |
 | `CHECKIN_CACHE_TTL_MS` | Optional cache TTL (default 7 minutes) |
 
 If Webflow env vars are omitted, waiver lookup still works; purchases will be empty.

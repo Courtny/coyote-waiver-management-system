@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EventTicketCounts } from '@/components/checkin/EventTicketCounts';
+import { EventsConfigBanner } from '@/components/checkin/EventsConfigBanner';
 import AdminPageShell from '@/components/admin/AdminPageShell';
+import type { EventsConfigStatus } from '@/lib/checkin-config';
 
 type Meta = {
   currentYear: number;
   events: { id: string; label: string }[];
+  eventsConfig?: EventsConfigStatus;
   webflowConfigured: boolean;
 };
 
@@ -62,6 +65,13 @@ export default function AdminTicketsPage() {
         </>
       }
     >
+      {meta && (
+        <EventsConfigBanner
+          webflowConfigured={meta.webflowConfigured}
+          eventsCount={meta.events?.length ?? 0}
+          eventsConfig={meta.eventsConfig}
+        />
+      )}
       <div className="card">
         <EventTicketCounts webflowConfigured={Boolean(meta?.webflowConfigured)} />
       </div>

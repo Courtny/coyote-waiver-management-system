@@ -13,12 +13,15 @@ import {
   XCircle,
 } from 'lucide-react';
 import AdminPageShell from '@/components/admin/AdminPageShell';
+import { EventsConfigBanner } from '@/components/checkin/EventsConfigBanner';
 import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
 import { WaiverSearchResult } from '@/lib/types';
+import type { EventsConfigStatus } from '@/lib/checkin-config';
 
 type Meta = {
   currentYear: number;
   events: { id: string; label: string }[];
+  eventsConfig?: EventsConfigStatus;
   webflowConfigured: boolean;
 };
 
@@ -254,6 +257,14 @@ export default function AdminCheckInPage() {
             <code className="bg-amber-100 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
             <code className="bg-amber-100 px-1 rounded">WEBFLOW_SITE_ID</code> are set.
           </div>
+        )}
+
+        {meta && (
+          <EventsConfigBanner
+            webflowConfigured={meta.webflowConfigured}
+            eventsCount={meta.events?.length ?? 0}
+            eventsConfig={meta.eventsConfig}
+          />
         )}
 
         <div className="card mb-6">

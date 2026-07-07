@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "create-admin": "tsx scripts/create-admin.ts",
+    "validate:config": "tsx scripts/validate-checkin-events.ts",
+    "test": "node --import tsx --test lib/__tests__/checkin-config.test.ts lib/__tests__/ticket-checkin.test.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

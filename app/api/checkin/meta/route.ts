@@ -6,10 +6,11 @@ export async function GET(request: NextRequest) {
   const denied = requireAdmin(request);
   if (denied) return denied;
 
-  const { events } = getCheckinConfig();
+  const { events, eventsConfig } = getCheckinConfig();
   return NextResponse.json({
     currentYear: new Date().getFullYear(),
     events,
+    eventsConfig,
     webflowConfigured: isWebflowConfigured(),
   });
 }

@@ -57,6 +57,18 @@ Save this value securely - you'll need it in Step 3.
    - Environment: add to **Production** and **Preview** (and Development if you use Vercel dev) so branch previews work.
    - See repository **`.env.example`** for optional `CHECKIN_*` JSON variables (party size map, gate filter, etc.).
 
+   **CHECKIN_EVENTS_JSON** (optional – gate / product filter override)
+   - **Canonical source:** edit [`config/checkin-events.json`](config/checkin-events.json) in the repo first, then deploy.
+   - The app loads that file automatically when this env var is missing, empty, or invalid (so an accidental Vercel wipe does not silently break check-in).
+   - Set `CHECKIN_EVENTS_JSON` only when you need to override the committed file without a code deploy.
+   - Before deploy, run `npm run validate:config` to validate the JSON file.
+   - **Vercel edit rules:**
+     - In the dashboard, paste **only** the JSON array into the **Value** field — not `CHECKIN_EVENTS_JSON=...`.
+     - When using **Import .env file**, include **all** events; import replaces the whole value (it does not merge).
+     - Run `vercel env pull` first as a backup before overwriting.
+   - After changing this variable, **redeploy** production so serverless functions pick up the new value.
+   - Admin check-in and tickets pages show an amber banner when the app is using the file fallback or when no events are configured.
+
 3. Click **"Save"**
 
 ## Step 3b: Deployment Protection (Required for OG Image)
