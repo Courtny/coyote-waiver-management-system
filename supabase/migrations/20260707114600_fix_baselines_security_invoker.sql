@@ -1,0 +1,47 @@
+-- Migration: Harden public.baselines against privilege escalation
+--
+-- Security note:
+-- public.baselines was flagged by Supabase Database Linter as a SECURITY DEFINER view.
+-- SECURITY DEFINER views execute with the view owner's privileges, which can bypass Row
+-- Level Security (RLS) on underlying tables. Setting security_invoker = true ensures
+-- the view runs with the querying user's permissions so RLS policies on base tables
+-- (e.g. public.sold_prices) are enforced.
+--
+-- Introspected state (2026-07-07):
+--   - Underlying table: public.sold_prices (RLS enabled)
+--   - Existing grants preserved by ALTER VIEW (anon, authenticated, service_role, postgres)
+--
+-- Verification after apply:
+--   SELECT c.reloptions
+--   FROM pg_class c
+--   JOIN pg_namespace n ON n.oid = c.relnamespace
+--   WHERE n.nspname = 'public' AND c.relname = 'baselines';
+--   -- Expect: {security_invoker=true}
+
+ALTER VIEW public.baselines SET (security_invoker = true);
+
+-- Fallback (only if ALTER VIEW is unsupported): recreate with security_invoker = true.
+-- Uncomment and run manually; then re-apply only the grants captured during introspection.
+--
+-- DROP VIEW public.baselines;
+--
+-- CREATE VIEW public.baselines
+--   WITH (security_invoker = true)
+-- AS
+--  WITH priced AS (
+--          SELECT sold_prices.target_name,
+--             sold_prices.price
+--            FROM sold_prices
+--           WHERE sold_prices.target_name IS NOT NULL AND sold_prices.price IS NOT NULL AND sold_prices.price > 0::numeric
+--         )
+--  SELECT target_name,
+--     count(*)::integer AS n,
+--     avg(price) AS mean,
+--     percentile_cont(0.5::double precision) WITHIN GROUP (ORDER BY (price::double precision))::numeric AS median,
+--     min(price) AS low,
+--     max(price) AS high,
+--     COALESCE(( SELECT avg(p2.price) AS avg
+--            FROM priced p2
+--           WHERE p2.target_name = priced.target_name AND p2.price::double precision >= percentile_cont(0.10::double precision) WITHIN GROUP (ORDER BY (priced.price::double precision)) AND p2.price::double precision <= percentile_cont(0.90::double precision) WITHIN GROUP (ORDER BY (priced.price::double precision))), avg(price)) AS trimmed
+--    FROM priced
+--   GROUP BY target_name;
