@@ -89,6 +89,10 @@
     font-weight: 700;
     color: var(--cf-op-fg);
   }
+  .cf-op-ribbon__num--closed {
+    color: var(--cf-op-accent);
+    letter-spacing: 0.04em;
+  }
   .cf-op-ribbon.cf-op-ribbon--loading .cf-op-ribbon__num {
     opacity: 0.35;
   }
@@ -99,6 +103,10 @@
 <script>
   (function () {
     var WAIVER_API_ORIGIN = 'https://waiver.coyoteforce.com';
+    var CLOSED_DAYS = {
+      saturday: false,
+      sunday: false,
+    };
     function hashString(input) {
       var h = 2166136261;
       for (var i = 0; i < input.length; i++) {
@@ -120,6 +128,19 @@
       var n = parseDisplayCount(rawDisplay);
       if (n == null) return String(baseline);
       return String(n + baseline);
+    }
+    function displayForDay(rawDisplay, baseline, isClosed) {
+      if (isClosed) return 'Closed';
+      return withBaseline(rawDisplay, baseline);
+    }
+    function setDayDisplay(el, rawDisplay, baseline, isClosed) {
+      if (!el) return;
+      el.textContent = displayForDay(rawDisplay, baseline, isClosed);
+      if (isClosed) {
+        el.classList.add('cf-op-ribbon__num--closed');
+      } else {
+        el.classList.remove('cf-op-ribbon__num--closed');
+      }
     }
     var root = document.getElementById('cf-open-play-ribbon');
     if (!root) return;
@@ -146,8 +167,8 @@
         var sunBase = weeklyBaseline(d.weekLabel, 'sun');
         if (elLoading) elLoading.textContent = '';
         elWeek.textContent = d.weekLabel;
-        elSat.textContent = withBaseline(d.saturdayDisplay, satBase);
-        elSun.textContent = withBaseline(d.sundayDisplay, sunBase);
+        setDayDisplay(elSat, d.saturdayDisplay, satBase, CLOSED_DAYS.saturday);
+        setDayDisplay(elSun, d.sundayDisplay, sunBase, CLOSED_DAYS.sunday);
       })
       .catch(function () {
         root.classList.remove('cf-op-ribbon--loading');
