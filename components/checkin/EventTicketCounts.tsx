@@ -76,11 +76,11 @@ type EventDetailPanelProps = {
 function TicketCheckInButtons({
   row,
   productId,
-  onCheckedIn,
+  onUnitsChange,
 }: {
   row: EventAttendanceLine;
   productId: string;
-  onCheckedIn: (checkedInUnits: number[]) => void;
+  onUnitsChange: (checkedInUnits: number[]) => void;
 }) {
   const [pending, setPending] = useState<number | null>(null);
   const checkedSet = useMemo(() => new Set(row.checkedInUnits ?? []), [row.checkedInUnits]);
@@ -90,7 +90,7 @@ function TicketCheckInButtons({
 
     const prev = row.checkedInUnits ?? [];
     const optimistic = [...prev, unitIndex].sort((a, b) => a - b);
-    onCheckedIn(optimistic);
+    onUnitsChange(optimistic);
     setPending(unitIndex);
 
     try {
@@ -106,14 +106,54 @@ function TicketCheckInButtons({
       });
       const data = await res.json();
       if (!res.ok) {
-        onCheckedIn(prev);
+        onUnitsChange(prev);
         return;
       }
-      onCheckedIn(data.checkedInUnits ?? optimistic);
+      onUnitsChange(data.checkedInUnits ?? optimistic);
     } catch {
-      onCheckedIn(prev);
+      onUnitsChange(prev);
     } finally {
       setPending(null);
+    }
+  };
+
+  const handleUndo = async (unitIndex: number) => {
+    if (!checkedSet.has(unitIndex) || pending !== null) return;
+
+    const prev = row.checkedInUnits ?? [];
+    const optimistic = prev.filter((u) => u !== unitIndex);
+    onUnitsChange(optimistic);
+    setPending(unitIndex);
+
+    try {
+      const res = await fetch('/api/checkin/attendance/checkin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          order_id: row.orderId,
+          variant_id: row.variantId,
+          unit_index: unitIndex,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onUnitsChange(prev);
+        return;
+      }
+      onUnitsChange(data.checkedInUnits ?? optimistic);
+    } catch {
+      onUnitsChange(prev);
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const handleUnitClick = (unitIndex: number) => {
+    if (checkedSet.has(unitIndex)) {
+      void handleUndo(unitIndex);
+    } else {
+      void handleCheckIn(unitIndex);
     }
   };
 
@@ -126,13 +166,16 @@ function TicketCheckInButtons({
           <button
             key={i}
             type="button"
-            disabled={checked || pending !== null}
-            onClick={() => void handleCheckIn(i)}
-            aria-label={checked ? `Ticket ${i + 1} checked in` : `Check in ticket ${i + 1}`}
+            disabled={pending !== null}
+            onClick={() => handleUnitClick(i)}
+            title={checked ? 'Undo check-in' : undefined}
+            aria-label={
+              checked ? `Undo check-in for ticket ${i + 1}` : `Check in ticket ${i + 1}`
+            }
             className={
               'inline-flex h-8 min-w-[2rem] items-center justify-center rounded-md border text-xs font-medium transition-colors ' +
               (checked
-                ? 'border-green-600 bg-green-600 text-white cursor-default'
+                ? 'border-green-600 bg-green-600 text-white cursor-pointer hover:bg-green-700'
                 : isPending
                   ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
                   : 'border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:bg-green-50 hover:text-green-800')
@@ -578,7 +621,7 @@ function EventDetailPanel({
                         <TicketCheckInButtons
                           row={row}
                           productId={detail.productId}
-                          onCheckedIn={(units) =>
+                          onUnitsChange={(units) =>
                             updateLineCheckins(row.orderId, row.variantId, units)
                           }
                         />

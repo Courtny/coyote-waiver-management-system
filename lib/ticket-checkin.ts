@@ -95,3 +95,36 @@ export async function markTicketCheckedIn(params: {
 
   return result.rows.map((r) => r.unitIndex);
 }
+
+export async function unmarkTicketCheckedIn(params: {
+  productId: string;
+  orderId: string;
+  variantId: string;
+  unitIndex: number;
+}): Promise<number[]> {
+  const productId = params.productId.trim();
+  const orderId = params.orderId.trim();
+  const variantId = params.variantId?.trim() ?? '';
+
+  if (!productId || !orderId) {
+    throw new Error('Missing productId or orderId');
+  }
+  if (!Number.isInteger(params.unitIndex) || params.unitIndex < 0) {
+    throw new Error('Invalid unitIndex');
+  }
+
+  await pool.query(
+    `DELETE FROM ticket_checkins
+     WHERE "productId" = $1 AND "orderId" = $2 AND "variantId" = $3 AND "unitIndex" = $4`,
+    [productId, orderId, variantId, params.unitIndex]
+  );
+
+  const result = await pool.query<{ unitIndex: number }>(
+    `SELECT "unitIndex" FROM ticket_checkins
+     WHERE "productId" = $1 AND "orderId" = $2 AND "variantId" = $3
+     ORDER BY "unitIndex"`,
+    [productId, orderId, variantId]
+  );
+
+  return result.rows.map((r) => r.unitIndex);
+}

@@ -93,3 +93,29 @@ describe('countCheckedInTickets', () => {
     assert.deepEqual(countCheckedInTickets(lines), { checkedInTotal: 0, ticketTotal: 2 });
   });
 });
+
+describe('undo check-in state', () => {
+  it('reflects reduced checkedInUnits after undo via attachCheckinStatus', () => {
+    const lines = [sampleLine({ quantity: 3 })];
+    const afterCheckin = attachCheckinStatus(
+      lines,
+      new Map([[lineKey('ord-1', 'var-1'), [0, 1, 2]]])
+    );
+    assert.deepEqual(afterCheckin[0].checkedInUnits, [0, 1, 2]);
+    assert.deepEqual(countCheckedInTickets(afterCheckin), { checkedInTotal: 3, ticketTotal: 3 });
+
+    const afterUndo = attachCheckinStatus(
+      lines,
+      new Map([[lineKey('ord-1', 'var-1'), [0, 2]]])
+    );
+    assert.deepEqual(afterUndo[0].checkedInUnits, [0, 2]);
+    assert.deepEqual(countCheckedInTickets(afterUndo), { checkedInTotal: 2, ticketTotal: 3 });
+  });
+
+  it('reflects empty line after undoing all units', () => {
+    const lines = [sampleLine({ quantity: 2, checkedInUnits: [0, 1] })];
+    const afterUndo = attachCheckinStatus(lines, new Map());
+    assert.deepEqual(afterUndo[0].checkedInUnits, []);
+    assert.deepEqual(countCheckedInTickets(afterUndo), { checkedInTotal: 0, ticketTotal: 2 });
+  });
+});
