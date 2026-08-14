@@ -56,6 +56,44 @@ function eventTitle(
   return productName || `Product ${productId}`;
 }
 
+/** Known Webflow product ids for Open Play (also matchable by title). */
+export const AIRSOFT_OPEN_PLAY_PRODUCT_ID = '66a2a82ee43b0a9a111c999c';
+export const PAINTBALL_OPEN_PLAY_PRODUCT_ID = '66a15ea8d3dec3dd5909824c';
+
+/** Parse Webflow/Mongo ObjectId creation time (ms), or 0 if not a 24-char hex id. */
+export function productIdCreatedAtMs(productId: string): number {
+  const id = productId.trim();
+  if (!/^[a-f0-9]{24}$/i.test(id)) return 0;
+  const seconds = parseInt(id.slice(0, 8), 16);
+  return Number.isFinite(seconds) ? seconds * 1000 : 0;
+}
+
+/**
+ * Pin rank for ticket summary cards:
+ * 0 = Airsoft Open Play, 1 = Paintball Open Play, 2 = everything else.
+ */
+export function openPlayPinRank(summary: { productId: string; title: string }): number {
+  const pid = summary.productId.trim();
+  const title = summary.title || '';
+  if (pid === AIRSOFT_OPEN_PLAY_PRODUCT_ID) return 0;
+  if (pid === PAINTBALL_OPEN_PLAY_PRODUCT_ID) return 1;
+  const isOpenPlay = /open\s*play/i.test(title);
+  if (isOpenPlay && /airsoft/i.test(title)) return 0;
+  if (isOpenPlay && /paintball/i.test(title)) return 1;
+  return 2;
+}
+
+export function compareAttendanceSummaries(
+  a: { productId: string; title: string },
+  b: { productId: string; title: string }
+): number {
+  const pinDiff = openPlayPinRank(a) - openPlayPinRank(b);
+  if (pinDiff !== 0) return pinDiff;
+  const timeDiff = productIdCreatedAtMs(b.productId) - productIdCreatedAtMs(a.productId);
+  if (timeDiff !== 0) return timeDiff;
+  return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+}
+
 /** Resolve display title for a product id using cached orders + CHECKIN_EVENTS_JSON */
 export function resolveEventTitle(
   productId: string,
@@ -166,7 +204,7 @@ export function buildAttendanceSummaries(
     });
   }
 
-  summaries.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+  summaries.sort(compareAttendanceSummaries);
   return summaries;
 }
 
