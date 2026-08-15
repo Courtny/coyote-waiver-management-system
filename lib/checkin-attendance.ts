@@ -268,3 +268,26 @@ export function flagEventPatchRecipients(lines: EventAttendanceLine[], patchCoun
     byDate[i].receivesEventPatch = true;
   }
 }
+
+/** Default early-registrant patch count for FTX/STX events. */
+export const DEFAULT_FTX_STX_PATCH_COUNT = 40;
+
+/** True when the event title contains a whole-word FTX or STX (case-insensitive). */
+export function isFtxOrStxEventTitle(title: string): boolean {
+  return /\b(?:FTX|STX)\b/i.test(title);
+}
+
+/**
+ * Resolve how many earliest lines get "Receives Event Patch".
+ * Explicit config wins; otherwise FTX/STX titles default to 40.
+ */
+export function resolveEventPatchCount(
+  title: string,
+  eventCfg?: { eventPatchCount?: number }
+): number | undefined {
+  if (eventCfg?.eventPatchCount && eventCfg.eventPatchCount >= 1) {
+    return eventCfg.eventPatchCount;
+  }
+  if (isFtxOrStxEventTitle(title)) return DEFAULT_FTX_STX_PATCH_COUNT;
+  return undefined;
+}

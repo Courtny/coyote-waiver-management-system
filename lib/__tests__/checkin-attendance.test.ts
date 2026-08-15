@@ -2,12 +2,17 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   AIRSOFT_OPEN_PLAY_PRODUCT_ID,
+  DEFAULT_FTX_STX_PATCH_COUNT,
   PAINTBALL_OPEN_PLAY_PRODUCT_ID,
   buildAttendanceSummaries,
   compareAttendanceSummaries,
+  flagEventPatchRecipients,
+  isFtxOrStxEventTitle,
   openPlayPinRank,
   productIdCreatedAtMs,
+  resolveEventPatchCount,
 } from '../checkin-attendance';
+import type { EventAttendanceLine } from '../checkin-attendance';
 import type { NormalizedOrder } from '../webflow-orders';
 
 function orderWithProduct(
@@ -137,5 +142,79 @@ describe('buildAttendanceSummaries sort order', () => {
       summaries.map((s) => s.productId),
       [airsoftAlt, paintballAlt, other]
     );
+  });
+});
+
+describe('isFtxOrStxEventTitle', () => {
+  it('matches FTX and STX titles', () => {
+    assert.equal(isFtxOrStxEventTitle('Airsoft FTX: Dead Silence'), true);
+    assert.equal(isFtxOrStxEventTitle('Paintball STX: Discovery'), true);
+    assert.equal(isFtxOrStxEventTitle('Coyote Airsoft FTX'), true);
+  });
+
+  it('rejects Open Play, Magfed, and unrelated titles', () => {
+    assert.equal(isFtxOrStxEventTitle('Coyote Airsoft - Open Play'), false);
+    assert.equal(isFtxOrStxEventTitle('Coyote Magfed Meet Ticket'), false);
+    assert.equal(isFtxOrStxEventTitle('Contact: LADOGA'), false);
+  });
+});
+
+describe('resolveEventPatchCount', () => {
+  it('returns default 40 for FTX/STX titles without config', () => {
+    assert.equal(resolveEventPatchCount('Airsoft FTX: Ambush'), DEFAULT_FTX_STX_PATCH_COUNT);
+    assert.equal(resolveEventPatchCount('Paintball STX: Discovery'), 40);
+  });
+
+  it('returns config override when set', () => {
+    assert.equal(resolveEventPatchCount('Airsoft FTX: Heist', { eventPatchCount: 25 }), 25);
+  });
+
+  it('returns undefined for non-FTX/STX without config', () => {
+    assert.equal(resolveEventPatchCount('Coyote Airsoft - Open Play'), undefined);
+    assert.equal(resolveEventPatchCount('Contact: LADOGA'), undefined);
+  });
+});
+
+describe('flagEventPatchRecipients', () => {
+  it('marks the earliest N lines by order date', () => {
+    const lines: EventAttendanceLine[] = [
+      {
+        orderId: 'c',
+        orderedAt: '2026-03-01T12:00:00Z',
+        customerName: 'C',
+        customerEmail: 'c@example.com',
+        sku: 's',
+        variantId: 'v',
+        displayName: 'Ticket',
+        quantity: 1,
+        partySize: 1,
+      },
+      {
+        orderId: 'a',
+        orderedAt: '2026-01-01T12:00:00Z',
+        customerName: 'A',
+        customerEmail: 'a@example.com',
+        sku: 's',
+        variantId: 'v',
+        displayName: 'Ticket',
+        quantity: 1,
+        partySize: 1,
+      },
+      {
+        orderId: 'b',
+        orderedAt: '2026-02-01T12:00:00Z',
+        customerName: 'B',
+        customerEmail: 'b@example.com',
+        sku: 's',
+        variantId: 'v',
+        displayName: 'Ticket',
+        quantity: 1,
+        partySize: 1,
+      },
+    ];
+    flagEventPatchRecipients(lines, 2);
+    assert.equal(lines.find((l) => l.orderId === 'a')?.receivesEventPatch, true);
+    assert.equal(lines.find((l) => l.orderId === 'b')?.receivesEventPatch, true);
+    assert.equal(lines.find((l) => l.orderId === 'c')?.receivesEventPatch, undefined);
   });
 });
