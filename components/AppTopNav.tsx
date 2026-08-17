@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -99,10 +100,18 @@ export default function AppTopNav() {
         aria-label="Main"
       >
         <Link
-          href="/"
-          className="min-w-0 shrink truncate font-heading text-sm font-semibold text-foreground hover:text-link-hover sm:text-base"
+          href="/admin/dashboard"
+          className="flex min-w-0 shrink items-center gap-2 font-heading text-sm font-semibold text-foreground hover:text-link-hover sm:gap-2.5 sm:text-base"
         >
-          Coyote Waiver
+          <Image
+            src="/coyote-shield.png"
+            alt=""
+            width={148}
+            height={176}
+            className="h-8 w-auto shrink-0 sm:h-9"
+            priority
+          />
+          <span className="truncate">Coyote Waiver</span>
         </Link>
 
         <div className="hidden min-w-0 flex-1 items-center justify-end gap-1 lg:flex lg:gap-2">
