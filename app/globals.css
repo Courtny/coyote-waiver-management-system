@@ -2,5 +2,4 @@
 
 @source "../app";
 @source "../components";
-@source "../node_modules/@coyote-force/ui/src";
 @source "../node_modules/@coyote-force/ui/dist";

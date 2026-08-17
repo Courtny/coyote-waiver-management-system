@@ -1,0 +1,14 @@
+/*
+ * Optional Google Fonts stylesheet for Inter Tight and Fragment Mono.
+ *
+ * Import this ONLY in apps that cannot use next/font or a self-hosted strategy.
+ * UNITED Sans is commercial — consumers must supply their own @font-face for
+ * --font-display. Next.js apps should load Inter Tight + Fragment Mono via
+ * next/font/google:
+ *
+ *   import { Inter_Tight, Fragment_Mono } from "next/font/google"
+ *
+ * Then pass the resulting className to <html> and set
+ * --font-sans-loaded / --font-mono-loaded.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap");

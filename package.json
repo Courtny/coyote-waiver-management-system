@@ -12,7 +12,8 @@
     "test": "node --import tsx --test lib/__tests__/checkin-config.test.ts lib/__tests__/ticket-checkin.test.ts lib/__tests__/checkin-attendance.test.ts"
   },
   "dependencies": {
-    "@coyote-force/ui": "file:../Coyote Design System/packages/ui",
+    "@coyote-force/ui": "file:./vendor/coyote-force-ui",
+    "@tailwindcss/postcss": "^4.2.2",
     "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.0.6",
@@ -24,10 +25,10 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.19.0",
-    "shadcn": "^4.0.0"
+    "shadcn": "^4.0.0",
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.6",
@@ -37,7 +38,6 @@
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.2.5",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.2.2",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
