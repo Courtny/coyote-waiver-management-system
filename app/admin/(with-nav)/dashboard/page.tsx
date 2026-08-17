@@ -9,6 +9,7 @@ import { Button } from '@coyote-force/ui';
 import { highlightMatch } from '@/lib/typeahead-utils';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
+import WaiverRegistrationOverview from '@/components/admin/WaiverRegistrationOverview';
 
 interface TypeaheadOption {
   id: number;
@@ -227,6 +228,8 @@ export default function AdminDashboard() {
         </>
       }
     >
+        <WaiverRegistrationOverview />
+
         <div className="rounded border border-border bg-card p-6 mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
