@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Button, Card, CardContent } from '@coyote-force/ui';
 
 export const metadata = {
   title: 'Coyote Safety Waiver – Sign the Waiver',
@@ -9,7 +10,7 @@ export const metadata = {
 export default function Home() {
   return (
     <div 
-        className="min-h-screen py-8 px-4 relative flex items-center justify-center"
+        className="relative flex min-h-screen items-center justify-center px-4 py-8"
         style={{
           backgroundImage: 'url(/coyote-background.jpg)',
           backgroundSize: 'cover',
@@ -18,12 +19,10 @@ export default function Home() {
           zIndex: 1,
         }}
       >
-        {/* Overlay for better text readability */}
         <div className="absolute inset-0 bg-black/60" style={{ zIndex: 1 }}></div>
       
-      <div className="w-auto mx-auto relative z-10">
-        {/* Logo above container */}
-        <div className="flex justify-center items-center mb-6">
+      <div className="relative z-10 mx-auto w-auto">
+        <div className="mb-6 flex items-center justify-center">
           <img 
             src="/Coyote-Airsoft-Paintball-Logo.svg" 
             alt="Coyote Airsoft and Paintball Logo" 
@@ -32,31 +31,29 @@ export default function Home() {
           />
         </div>
         
-        <div className="card bg-white/95 backdrop-blur-sm shadow-xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <Card className="bg-card/95 backdrop-blur-sm">
+          <CardContent className="px-8 py-2 text-center">
+            <h1 className="font-heading mb-2 text-3xl font-semibold tracking-tight text-foreground">
               Coyote Safety Waiver
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="mb-8 text-xl text-muted-foreground">
               Please sign our waiver to get access to the playing field.
             </p>
-          </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link 
-              href="/waiver" 
-              className="btn btn-primary w-full sm:w-auto min-w-[200px] text-center"
-            >
-              Sign Waiver
-            </Link>
-            <Link 
-              href="/admin/login" 
-              // (No className prop for simple hyperlink)
-            >
-              Admin Login
-            </Link>
-          </div>
-        </div>
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Button asChild className="w-full min-w-[200px] uppercase tracking-[0.08em] sm:w-auto">
+                <Link href="/waiver">
+                  Sign Waiver
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/admin/login">
+                  Admin Login
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

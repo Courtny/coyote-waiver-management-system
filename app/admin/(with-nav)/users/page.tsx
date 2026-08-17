@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, UserPlus } from 'lucide-react';
+import { Button, Input, Label } from '@coyote-force/ui';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
 
@@ -157,8 +158,8 @@ export default function AdminUsersPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -166,51 +167,49 @@ export default function AdminUsersPage() {
   return (
     <AdminPageShell title="Admin User Management" backHref="/admin/dashboard">
         {error && (
-          <div className="card mb-6">
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+          <div className="rounded border border-border bg-card p-6 mb-6">
+            <div className="p-4 bg-destructive/10 text-destructive rounded border border-destructive/30">
               {error}
             </div>
           </div>
         )}
 
         {success && (
-          <div className="card mb-6">
-            <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-200">
+          <div className="rounded border border-border bg-card p-6 mb-6">
+            <div className="p-4 bg-status-green/10 text-status-green rounded border border-status-green/30">
               {success}
             </div>
           </div>
         )}
 
         {/* Create New Admin User Form */}
-        <div className="card mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="rounded border border-border bg-card p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-foreground mb-4 flex items-center gap-2">
             <UserPlus size={24} />
             Create New Admin User
           </h2>
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="label" htmlFor="username">
+              <div className="space-y-2">
+                <Label htmlFor="username">
                   Username *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id="username"
-                  className="input"
                   required
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
                   placeholder="Enter username"
                 />
               </div>
-              <div>
-                <label className="label" htmlFor="password">
+              <div className="space-y-2">
+                <Label htmlFor="password">
                   Password *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="password"
                   id="password"
-                  className="input"
                   required
                   minLength={8}
                   value={newPassword}
@@ -219,51 +218,50 @@ export default function AdminUsersPage() {
                 />
               </div>
             </div>
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isCreating}
             >
               {isCreating ? 'Creating...' : 'Create Admin User'}
-            </button>
+            </Button>
           </form>
         </div>
 
         {/* Admin Users List */}
-        <div className="card">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+        <div className="rounded border border-border bg-card p-6">
+          <h2 className="text-2xl font-semibold text-foreground mb-6">
             All Admin Users ({users.length})
           </h2>
           {isLoading ? (
             <TableSkeleton columns={4} rows={6} ariaLabel="Loading admin users" />
           ) : users.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600">No admin users found.</p>
+              <p className="text-muted-foreground">No admin users found.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">ID</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Username</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Created</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Actions</th>
+                  <tr className="border-b-2 border-border">
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">ID</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Username</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Created</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => {
                     const isCurrentUser = user.username.toLowerCase() === currentUsername.toLowerCase();
                     return (
-                      <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-gray-600">{user.id}</td>
+                      <tr key={user.id} className="border-b border-border hover:bg-muted transition-colors">
+                        <td className="px-4 py-3 text-muted-foreground">{user.id}</td>
                         <td className="px-4 py-3 font-medium">
                           {user.username}
                           {isCurrentUser && (
-                            <span className="ml-2 text-sm text-blue-600 font-normal">(You)</span>
+                            <span className="ml-2 text-sm text-brand font-normal">(You)</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {user.createdAt ? (() => {
                             try {
                               const date = new Date(user.createdAt);
@@ -278,16 +276,17 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="px-4 py-3">
                           {isCurrentUser ? (
-                            <span className="text-gray-400 text-sm">Cannot delete yourself</span>
+                            <span className="text-muted-foreground text-sm">Cannot delete yourself</span>
                           ) : (
-                            <button
+                            <Button
+                              variant="destructive-solid"
+                              size="sm"
                               onClick={() => handleDeleteUser(user.id, user.username)}
                               disabled={deletingId === user.id}
-                              className="btn btn-danger text-sm py-1 px-3 flex items-center gap-1 disabled:opacity-50"
                             >
                               <Trash2 size={16} />
                               {deletingId === user.id ? 'Deleting...' : 'Delete'}
-                            </button>
+                            </Button>
                           )}
                         </td>
                       </tr>

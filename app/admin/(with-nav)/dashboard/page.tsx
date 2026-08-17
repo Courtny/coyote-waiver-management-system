@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { WaiverSearchResult } from '@/lib/types';
 import { Search, CheckCircle, XCircle, Loader2, Download } from 'lucide-react';
+import { Button } from '@coyote-force/ui';
 import { highlightMatch } from '@/lib/typeahead-utils';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
@@ -192,8 +193,8 @@ export default function AdminDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -205,31 +206,33 @@ export default function AdminDashboard() {
       title="Admin Dashboard"
       actions={
         <>
-          <a
-            href="/api/admin/waivers/export-emails"
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-            title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
-          >
-            <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
-            Export {currentYear}
-          </a>
-          <a
-            href="/api/admin/waivers/export-emails?all=1"
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-            title="Distinct emails across all waiver years"
-          >
-            <Download size={14} className="shrink-0 text-gray-500" aria-hidden />
-            Export all years
-          </a>
+          <Button variant="secondary" size="sm" asChild>
+            <a
+              href="/api/admin/waivers/export-emails"
+              title={`Distinct emails for waiver year ${currentYear} (for Kit / ConvertKit import)`}
+            >
+              <Download size={14} className="shrink-0" aria-hidden />
+              Export {currentYear}
+            </a>
+          </Button>
+          <Button variant="secondary" size="sm" asChild>
+            <a
+              href="/api/admin/waivers/export-emails?all=1"
+              title="Distinct emails across all waiver years"
+            >
+              <Download size={14} className="shrink-0" aria-hidden />
+              Export all years
+            </a>
+          </Button>
         </>
       }
     >
-        <div className="card mb-6">
+        <div className="rounded border border-border bg-card p-6 mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search 
                 size={20} 
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10" 
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground z-10" 
               />
               <input
                 ref={inputRef}
@@ -239,7 +242,7 @@ export default function AdminDashboard() {
                 aria-controls="suggestions-list"
                 aria-activedescendant={activeIndex >= 0 ? `suggestion-${activeIndex}` : undefined}
                 aria-autocomplete="list"
-                className="input pl-12"
+                className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm pl-12"
                 placeholder="Search by player name..."
                 value={searchQuery}
                 onChange={(e) => {
@@ -291,7 +294,7 @@ export default function AdminDashboard() {
               {isLoadingSuggestions && searchQuery.trim().length >= 2 && (
                 <Loader2 
                   size={16} 
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" 
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground animate-spin" 
                 />
               )}
               {typeaheadSuggestions.length > 0 && searchQuery.trim().length >= 2 && !isSearchMode && (
@@ -299,7 +302,7 @@ export default function AdminDashboard() {
                   ref={suggestionsRef}
                   id="suggestions-list"
                   role="listbox"
-                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-auto"
+                  className="absolute z-50 w-full mt-1 bg-card border border-input rounded shadow-lg max-h-64 overflow-auto"
                 >
                   {typeaheadSuggestions.map((suggestion, index) => (
                     <div
@@ -309,8 +312,8 @@ export default function AdminDashboard() {
                       aria-selected={index === activeIndex}
                       className={`px-4 py-3 cursor-pointer transition-colors ${
                         index === activeIndex
-                          ? 'bg-blue-50 border-l-4 border-blue-500'
-                          : 'hover:bg-gray-50'
+                          ? 'bg-primary/10 border-l-4 border-brand'
+                          : 'hover:bg-muted'
                       }`}
                       onMouseEnter={() => setActiveIndex(index)}
                       onMouseDown={(e) => {
@@ -327,18 +330,18 @@ export default function AdminDashboard() {
                       }}
                     >
                       <div
-                        className="font-medium text-gray-900"
+                        className="font-medium text-foreground"
                         dangerouslySetInnerHTML={{
                           __html: highlightMatch(suggestion.primary, searchQuery.trim()),
                         }}
                       />
                       {suggestion.secondary && (
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-sm text-muted-foreground mt-1">
                           {suggestion.secondary}
                         </div>
                       )}
                       {suggestion.hasMatchingMinors && suggestion.minorNames && (
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="text-sm text-muted-foreground mt-1">
                           <span className="font-semibold">Minors: </span>
                           <span
                             dangerouslySetInnerHTML={{
@@ -357,105 +360,104 @@ export default function AdminDashboard() {
                !isSearchMode && (
                 <div
                   role="listbox"
-                  className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg px-4 py-3 text-gray-500 text-center"
+                  className="absolute z-50 w-full mt-1 bg-card border border-input rounded shadow-lg px-4 py-3 text-muted-foreground text-center"
                 >
                   No results found
                 </div>
               )}
             </div>
             <div className="flex gap-2">
-              <button
+              <Button
                 type="submit"
-                className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 {isLoading ? 'Searching...' : 'Search'}
-              </button>
+              </Button>
               {isSearchMode && (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={clearSearch}
-                  className="btn btn-secondary"
                 >
                   Clear
-                </button>
+                </Button>
               )}
             </div>
           </form>
 
           {error && (
-            <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+            <div className="mt-4 p-4 bg-destructive/10 text-destructive rounded border border-destructive/30">
               {error}
             </div>
           )}
         </div>
 
         {isSearchMode && isLoading && (
-          <div className="card">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Search Results</h2>
+          <div className="rounded border border-border bg-card p-6">
+            <h2 className="text-2xl font-semibold text-foreground mb-6">Search Results</h2>
             <TableSkeleton columns={7} rows={8} ariaLabel="Loading search results" />
           </div>
         )}
 
         {isSearchMode && !isLoading && searchResults.length > 0 && (
-          <div className="card">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <div className="rounded border border-border bg-card p-6">
+            <h2 className="text-2xl font-semibold text-foreground mb-6">
               Search Results ({searchResults.length})
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Name</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Year of Birth</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Minors</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Waiver Year</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Status</th>
-                    <th className="px-4 py-3 text-left text-gray-700 font-semibold">Signed Date</th>
+                  <tr className="border-b-2 border-border">
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Name</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Email</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Year of Birth</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Minors</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Waiver Year</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Status</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Signed Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {searchResults.map((result) => (
-                    <tr key={result.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                    <tr key={result.id} className="border-b border-border hover:bg-muted transition-colors">
                       <td className="px-4 py-3 font-medium">
                         <Link 
                           href={`/admin/waivers/${result.id}`}
-                          className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                          className="text-brand hover:text-brand hover:underline cursor-pointer"
                         >
                           {result.firstName} {result.lastName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {result.email}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {result.yearOfBirth}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {result.minorNames ? (
                           <span className="text-sm">{result.minorNames}</span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {result.waiverYear}
                       </td>
                       <td className="px-4 py-3">
                         {result.hasCurrentYearWaiver ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                          <span className="inline-flex items-center gap-1 text-status-green font-semibold">
                             <CheckCircle size={16} />
                             Valid {currentYear}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
+                          <span className="inline-flex items-center gap-1 text-destructive font-semibold">
                             <XCircle size={16} />
                             Expired
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {result.signatureDate ? (() => {
                           try {
                             const date = new Date(result.signatureDate);
@@ -477,17 +479,17 @@ export default function AdminDashboard() {
         )}
 
         {isSearchMode && searchQuery && searchResults.length === 0 && !isLoading && (
-          <div className="card">
-            <p className="text-center text-gray-600">
+          <div className="rounded border border-border bg-card p-6">
+            <p className="text-center text-muted-foreground">
               No waivers found for &quot;{searchQuery}&quot;
             </p>
           </div>
         )}
 
         {!isSearchMode && (
-          <div className="card">
+          <div className="rounded border border-border bg-card p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <h2 className="text-2xl font-semibold text-foreground">
                 All Waiver Submissions ({allWaivers.length})
               </h2>
             </div>
@@ -495,63 +497,63 @@ export default function AdminDashboard() {
               <TableSkeleton columns={7} rows={10} ariaLabel="Loading waivers" />
             ) : allWaivers.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-600">No waivers submitted yet.</p>
+                <p className="text-muted-foreground">No waivers submitted yet.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Name</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Year of Birth</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Minors</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Waiver Year</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Status</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Signed Date</th>
+                    <tr className="border-b-2 border-border">
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Name</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Email</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Year of Birth</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Minors</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Waiver Year</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Status</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Signed Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {allWaivers.map((result) => (
-                      <tr key={result.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      <tr key={result.id} className="border-b border-border hover:bg-muted transition-colors">
                         <td className="px-4 py-3 font-medium">
                           <Link 
                             href={`/admin/waivers/${result.id}`}
-                            className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                            className="text-brand hover:text-brand hover:underline cursor-pointer"
                           >
                             {result.firstName} {result.lastName}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {result.email}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {result.yearOfBirth}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {result.minorNames ? (
                             <span className="text-sm">{result.minorNames}</span>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {result.waiverYear}
                         </td>
                         <td className="px-4 py-3">
                           {result.hasCurrentYearWaiver ? (
-                            <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                            <span className="inline-flex items-center gap-1 text-status-green font-semibold">
                               <CheckCircle size={16} />
                               Valid {currentYear}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
+                            <span className="inline-flex items-center gap-1 text-destructive font-semibold">
                               <XCircle size={16} />
                               Expired
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-muted-foreground">
                           {new Date(result.signatureDate).toLocaleDateString()}
                         </td>
                       </tr>

@@ -175,10 +175,10 @@ function TicketCheckInButtons({
             className={
               'inline-flex h-8 min-w-[2rem] items-center justify-center rounded-md border text-xs font-medium transition-colors ' +
               (checked
-                ? 'border-green-600 bg-green-600 text-white cursor-pointer hover:bg-green-700'
+                ? 'border-status-green bg-status-green text-white cursor-pointer hover:bg-status-green/90'
                 : isPending
-                  ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-wait'
-                  : 'border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:bg-green-50 hover:text-green-800')
+                  ? 'border-input bg-muted text-muted-foreground cursor-wait'
+                  : 'border-input bg-card text-foreground hover:border-status-green hover:bg-status-green/10 hover:text-status-green')
             }
           >
             {checked ? <Check size={14} aria-hidden /> : i + 1}
@@ -313,31 +313,31 @@ function EventDetailPanel({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+        className="inline-flex items-center gap-2 text-brand hover:text-brand text-sm font-medium"
       >
         <ArrowLeft size={16} />
         Back to event list
       </button>
 
       {ordersStale && webflowError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+        <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
           Showing cached orders; refresh failed: {webflowError}
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-xl font-bold text-gray-900">{detail.title}</h2>
-        <p className="text-sm text-gray-600">
-          <span className="font-medium text-gray-800">
+        <h2 className="text-xl font-bold text-foreground">{detail.title}</h2>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
             {checkedInTotal} / {ticketTotal} checked in
           </span>
           {' · '}
           {textFilteredLines.length} line{textFilteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
           {filteredLines.length !== detail.lines.length ? (
-            <span className="text-gray-500"> (of {detail.lines.length} lines)</span>
+            <span className="text-muted-foreground"> (of {detail.lines.length} lines)</span>
           ) : null}
           {searchQuery.trim() && textFilteredLines.length < filteredLines.length ? (
-            <span className="text-gray-500"> (of {filteredLines.length} matching SKU filters)</span>
+            <span className="text-muted-foreground"> (of {filteredLines.length} matching SKU filters)</span>
           ) : null}
         </p>
       </div>
@@ -347,25 +347,25 @@ function EventDetailPanel({
       ) : (
         <>
           {skuOptions.length > 1 ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50/80 overflow-hidden">
+            <div className="rounded border border-border bg-muted/80 overflow-hidden">
               <button
                 type="button"
                 id="event-ticket-sku-filter-toggle"
                 onClick={() => setFilterExpanded((v) => !v)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-100/80 transition-colors"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/80 transition-colors"
                 aria-expanded={filterExpanded}
                 aria-controls="event-ticket-sku-filter-panel"
               >
-                <span className="text-sm font-medium text-gray-800">Filter by ticket / SKU</span>
+                <span className="text-sm font-medium text-foreground">Filter by ticket / SKU</span>
                 <span className="flex items-center gap-2 shrink-0">
                   {!filterExpanded ? (
-                    <span className="text-xs text-gray-500 tabular-nums">
+                    <span className="text-xs text-muted-foreground tabular-nums">
                       {includedSkus.size}/{skuOptions.length} selected
                     </span>
                   ) : null}
                   <ChevronDown
                     size={20}
-                    className={`text-gray-600 shrink-0 transition-transform ${filterExpanded ? 'rotate-180' : ''}`}
+                    className={`text-muted-foreground shrink-0 transition-transform ${filterExpanded ? 'rotate-180' : ''}`}
                     aria-hidden
                   />
                 </span>
@@ -375,13 +375,13 @@ function EventDetailPanel({
                   id="event-ticket-sku-filter-panel"
                   role="region"
                   aria-labelledby="event-ticket-sku-filter-toggle"
-                  className="border-t border-gray-200 px-4 pb-3"
+                  className="border-t border-border px-4 pb-3"
                 >
                   <div className="flex flex-wrap justify-end gap-2 mb-3 pt-3">
-                    <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={selectAllSkus}>
+                    <button type="button" className="inline-flex items-center justify-center rounded border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted text-xs py-1.5 px-2" onClick={selectAllSkus}>
                       Select all
                     </button>
-                    <button type="button" className="btn btn-secondary text-xs py-1.5 px-2" onClick={clearAllSkus}>
+                    <button type="button" className="inline-flex items-center justify-center rounded border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted text-xs py-1.5 px-2" onClick={clearAllSkus}>
                       Clear
                     </button>
                   </div>
@@ -391,16 +391,16 @@ function EventDetailPanel({
                         <label className="inline-flex items-start gap-2 cursor-pointer text-sm">
                           <input
                             type="checkbox"
-                            className="mt-0.5 rounded border-gray-300"
+                            className="mt-0.5 rounded border-input"
                             checked={includedSkus.has(opt.skuKey)}
                             onChange={() => toggleSku(opt.skuKey)}
                           />
                           <span>
-                            <span className="font-medium text-gray-900">{opt.displayName}</span>
+                            <span className="font-medium text-foreground">{opt.displayName}</span>
                             {opt.skuKey ? (
-                              <span className="block text-xs text-gray-500 font-mono mt-0.5">{opt.skuKey}</span>
+                              <span className="block text-xs text-muted-foreground font-mono mt-0.5">{opt.skuKey}</span>
                             ) : (
-                              <span className="block text-xs text-gray-500 mt-0.5">(no SKU)</span>
+                              <span className="block text-xs text-muted-foreground mt-0.5">(no SKU)</span>
                             )}
                           </span>
                         </label>
@@ -425,14 +425,14 @@ function EventDetailPanel({
                 placeholder="Order ID, email, or customer name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input w-full"
+                className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm w-full"
                 aria-label="Search by order ID, email, or customer name"
               />
             </div>
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer shrink-0 pb-1">
+            <label className="inline-flex items-center gap-2 text-sm text-foreground cursor-pointer shrink-0 pb-1">
               <input
                 type="checkbox"
-                className="rounded border-gray-300"
+                className="rounded border-input"
                 checked={uncheckedOnly}
                 onChange={(e) => setUncheckedOnly(e.target.checked)}
               />
@@ -454,64 +454,64 @@ function EventDetailPanel({
                 <col className="w-28" />
               </colgroup>
               <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="px-3 py-3 text-left text-gray-700 font-semibold" scope="col">
+                <tr className="border-b-2 border-border">
+                  <th className="px-3 py-3 text-left text-foreground font-semibold" scope="col">
                     <span className="sr-only">Image</span>
                   </th>
-                  <th className="px-2 py-3 text-left text-gray-700 font-semibold" scope="col">
+                  <th className="px-2 py-3 text-left text-foreground font-semibold" scope="col">
                     <span className="sr-only">Waiver</span>
                   </th>
-                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">SKU / ticket</th>
-                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Customer</th>
-                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Email</th>
+                  <th className="px-3 py-3 text-left text-foreground font-semibold">SKU / ticket</th>
+                  <th className="px-3 py-3 text-left text-foreground font-semibold">Customer</th>
+                  <th className="px-3 py-3 text-left text-foreground font-semibold">Email</th>
                   <th
                     scope="col"
-                    className="px-3 py-3 text-right text-gray-700 font-semibold"
+                    className="px-3 py-3 text-right text-foreground font-semibold"
                     aria-sort={sortKey === 'quantity' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     <button
                       type="button"
                       onClick={() => toggleColumnSort('quantity')}
                       aria-label="Sort by quantity"
-                      className="inline-flex w-full items-center justify-end gap-1.5 rounded px-1 py-0.5 hover:bg-gray-100 -mr-1 font-semibold text-gray-700"
+                      className="inline-flex w-full items-center justify-end gap-1.5 rounded px-1 py-0.5 hover:bg-muted -mr-1 font-semibold text-foreground"
                     >
                       Qty
                       {sortKey === 'quantity' ? (
                         sortDir === 'asc' ? (
-                          <ArrowUp size={16} className="shrink-0 text-gray-700" aria-hidden />
+                          <ArrowUp size={16} className="shrink-0 text-foreground" aria-hidden />
                         ) : (
-                          <ArrowDown size={16} className="shrink-0 text-gray-700" aria-hidden />
+                          <ArrowDown size={16} className="shrink-0 text-foreground" aria-hidden />
                         )
                       ) : (
-                        <ArrowUpDown size={16} className="shrink-0 text-gray-400 opacity-70" aria-hidden />
+                        <ArrowUpDown size={16} className="shrink-0 text-muted-foreground opacity-70" aria-hidden />
                       )}
                     </button>
                   </th>
-                  <th className="px-3 py-3 text-left text-gray-700 font-semibold">Order</th>
+                  <th className="px-3 py-3 text-left text-foreground font-semibold">Order</th>
                   <th
                     scope="col"
-                    className="px-3 py-3 text-left text-gray-700 font-semibold"
+                    className="px-3 py-3 text-left text-foreground font-semibold"
                     aria-sort={sortKey === 'date' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
                     <button
                       type="button"
                       onClick={() => toggleColumnSort('date')}
                       aria-label="Sort by date"
-                      className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-gray-100 -ml-1 font-semibold text-gray-700"
+                      className="inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted -ml-1 font-semibold text-foreground"
                     >
                       Date
                       {sortKey === 'date' ? (
                         sortDir === 'asc' ? (
-                          <ArrowUp size={16} className="shrink-0 text-gray-700" aria-hidden />
+                          <ArrowUp size={16} className="shrink-0 text-foreground" aria-hidden />
                         ) : (
-                          <ArrowDown size={16} className="shrink-0 text-gray-700" aria-hidden />
+                          <ArrowDown size={16} className="shrink-0 text-foreground" aria-hidden />
                         )
                       ) : (
-                        <ArrowUpDown size={16} className="shrink-0 text-gray-400 opacity-70" aria-hidden />
+                        <ArrowUpDown size={16} className="shrink-0 text-muted-foreground opacity-70" aria-hidden />
                       )}
                     </button>
                   </th>
-                  <th className="px-3 py-3 text-right text-gray-700 font-semibold" scope="col">
+                  <th className="px-3 py-3 text-right text-foreground font-semibold" scope="col">
                     Check in
                   </th>
                 </tr>
@@ -519,13 +519,13 @@ function EventDetailPanel({
               <tbody>
                 {detail.lines.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                       No line items for this product in cached orders.
                     </td>
                   </tr>
                 ) : includedSkus.size === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                       No tickets / SKUs selected — choose at least one filter above or use Select all.
                     </td>
                   </tr>
@@ -533,7 +533,7 @@ function EventDetailPanel({
                   textFilteredLines.length === 0 &&
                   searchQuery.trim() ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                       No rows match your search. Try different order ID, email, or name keywords.
                     </td>
                   </tr>
@@ -541,7 +541,7 @@ function EventDetailPanel({
                   textFilteredLines.length === 0 &&
                   uncheckedOnly ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-600">
+                    <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
                       All visible tickets are checked in.
                     </td>
                   </tr>
@@ -552,8 +552,8 @@ function EventDetailPanel({
                     <tr
                       key={`${row.orderId}-${row.variantId}-${row.sku}-${i}`}
                       className={
-                        'border-b border-gray-200 transition-colors ' +
-                        (allChecked ? 'opacity-50 bg-gray-100' : 'hover:bg-gray-50')
+                        'border-b border-border transition-colors ' +
+                        (allChecked ? 'opacity-50 bg-muted' : 'hover:bg-muted')
                       }
                     >
                       <td className="px-3 py-3 align-middle">
@@ -561,11 +561,11 @@ function EventDetailPanel({
                           <img
                             src={row.imageUrl}
                             alt={row.displayName}
-                            className="h-14 w-14 rounded-md object-cover border border-gray-200 bg-white"
+                            className="h-14 w-14 rounded-md object-cover border border-border bg-card"
                           />
                         ) : (
                           <div
-                            className="h-14 w-14 rounded-md border border-dashed border-gray-200 bg-gray-50"
+                            className="h-14 w-14 rounded-md border border-dashed border-border bg-muted"
                             aria-hidden
                           />
                         )}
@@ -578,43 +578,43 @@ function EventDetailPanel({
                             className={
                               'inline-block h-3 w-3 rounded-full shrink-0 ' +
                               (row.waiverIndicator.level === 'green'
-                                ? 'bg-green-500'
+                                ? 'bg-status-green/100'
                                 : row.waiverIndicator.level === 'yellow'
                                   ? 'bg-amber-400'
-                                  : 'bg-red-500')
+                                  : 'bg-destructive/100')
                             }
                           />
                         ) : (
                           <span
-                            className="inline-block h-3 w-3 rounded-full shrink-0 bg-gray-200"
+                            className="inline-block h-3 w-3 rounded-full shrink-0 bg-muted"
                             aria-hidden
                           />
                         )}
                       </td>
                       <td className="px-3 py-3 font-medium align-top min-w-0">
-                        <div className="text-gray-900 text-sm leading-snug break-words">{row.displayName}</div>
+                        <div className="text-foreground text-sm leading-snug break-words">{row.displayName}</div>
                         {row.sku && (
-                          <div className="text-xs text-gray-500 font-mono mt-0.5 break-all">{row.sku}</div>
+                          <div className="text-xs text-muted-foreground font-mono mt-0.5 break-all">{row.sku}</div>
                         )}
                         {row.receivesEventPatch && (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-xs font-medium text-amber-800 mt-1">
+                          <span className="inline-flex items-center rounded-full bg-status-amber/25 border border-amber-300 px-2 py-0.5 text-xs font-medium text-foreground mt-1">
                             Receives Event Patch
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-words">
+                      <td className="px-3 py-3 text-muted-foreground align-top min-w-0 break-words">
                         {row.customerName}
                       </td>
-                      <td className="px-3 py-3 text-gray-600 align-top min-w-0 break-all">
+                      <td className="px-3 py-3 text-muted-foreground align-top min-w-0 break-all">
                         {row.customerEmail}
                       </td>
-                      <td className="px-3 py-3 text-right text-gray-600 font-medium align-top">
+                      <td className="px-3 py-3 text-right text-muted-foreground font-medium align-top">
                         {row.quantity}
                       </td>
-                      <td className="px-3 py-3 font-mono text-xs text-gray-600 align-top break-all min-w-0">
+                      <td className="px-3 py-3 font-mono text-xs text-muted-foreground align-top break-all min-w-0">
                         {row.orderId}
                       </td>
-                      <td className="px-3 py-3 text-gray-600 whitespace-nowrap align-top">
+                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap align-top">
                         {formatOrderDate(row.orderedAt)}
                       </td>
                       <td className="px-3 py-3 align-top">
@@ -726,9 +726,9 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
 
   if (!webflowConfigured) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
-        Connect Webflow (<code className="bg-amber-100 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
-        <code className="bg-amber-100 px-1 rounded">WEBFLOW_SITE_ID</code>) to see ticket counts by product.
+      <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
+        Connect Webflow (<code className="bg-status-amber/25 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
+        <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_SITE_ID</code>) to see ticket counts by product.
       </div>
     );
   }
@@ -749,14 +749,14 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-gray-600 text-sm">
+        <p className="text-muted-foreground text-sm">
           Ticket totals from cached Webflow orders, grouped by product (event). Open a card for orders and SKU breakdown.
         </p>
         <button
           type="button"
           onClick={() => void loadSummary()}
           disabled={loading}
-          className="btn btn-secondary inline-flex items-center gap-2 shrink-0 self-start"
+          className="inline-flex items-center justify-center rounded border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted inline-flex items-center gap-2 shrink-0 self-start"
         >
           {loading ? <Loader2 className="animate-spin" size={18} /> : <RefreshCw size={18} />}
           Refresh
@@ -764,12 +764,12 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
       </div>
 
       {ordersStale && webflowError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+        <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
           Showing cached orders; refresh failed: {webflowError}
         </div>
       )}
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
 
       {loading && events.length === 0 ? (
         <div
@@ -781,18 +781,18 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="card py-5 px-6 flex flex-row gap-4 items-start animate-pulse"
+              className="rounded border border-border bg-card p-6 py-5 px-6 flex flex-row gap-4 items-start animate-pulse"
             >
-              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg bg-gray-200" />
+              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded bg-muted" />
               <div className="flex-1 min-w-0 space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-1/2" />
+                <div className="h-6 bg-muted rounded w-3/4" />
+                <div className="h-4 bg-muted rounded w-1/2" />
               </div>
             </div>
           ))}
         </div>
       ) : events.length === 0 ? (
-        <p className="text-gray-600 text-sm py-8 text-center">No ecommerce line items found in orders yet.</p>
+        <p className="text-muted-foreground text-sm py-8 text-center">No ecommerce line items found in orders yet.</p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {events.map((ev) => (
@@ -806,29 +806,29 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
                   <img
                     src={ev.imageUrl}
                     alt={ev.title}
-                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg object-cover border border-gray-200 bg-white"
+                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded object-cover border border-border bg-card"
                   />
                 ) : (
                   <div
-                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg border border-dashed border-gray-200 bg-gray-50"
+                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded border border-dashed border-border bg-muted"
                     aria-hidden
                   />
                 )}
                 <div className="flex flex-col gap-3 min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-gray-900 text-lg pr-2">{ev.title}</h3>
+                    <h3 className="font-semibold text-foreground text-lg pr-2">{ev.title}</h3>
                     <ChevronRight
-                      className="text-gray-400 group-hover:text-blue-600 shrink-0 mt-1"
+                      className="text-muted-foreground group-hover:text-brand shrink-0 mt-1"
                       size={20}
                       aria-hidden
                     />
                   </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
-                      <Users size={16} className="text-gray-400" />
+                      <Users size={16} className="text-muted-foreground" />
                       {ev.orderCount} order{ev.orderCount !== 1 ? 's' : ''}
                     </span>
-                    <span className="font-medium text-gray-800">{ev.totalTickets} tickets</span>
+                    <span className="font-medium text-foreground">{ev.totalTickets} tickets</span>
                   </div>
                 </div>
               </button>

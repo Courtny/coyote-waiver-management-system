@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   XCircle,
 } from 'lucide-react';
+import { Button } from '@coyote-force/ui';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 import { EventsConfigBanner } from '@/components/checkin/EventsConfigBanner';
 import { PlayerNameTypeahead } from '@/components/checkin/PlayerNameTypeahead';
@@ -229,8 +230,8 @@ export default function AdminCheckInPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -244,7 +245,7 @@ export default function AdminCheckInPage() {
       description={
         <>
           Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
-          <Link href="/admin/tickets" className="font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap">
+          <Link href="/admin/tickets" className="font-medium text-brand hover:text-brand whitespace-nowrap">
             View ticket counts by event →
           </Link>
         </>
@@ -252,10 +253,10 @@ export default function AdminCheckInPage() {
     >
         <div className="mx-auto max-w-3xl">
         {meta && !meta.webflowConfigured && (
-          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+          <div className="mb-6 rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
             Webflow orders are not configured — purchase history will stay empty until{' '}
-            <code className="bg-amber-100 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
-            <code className="bg-amber-100 px-1 rounded">WEBFLOW_SITE_ID</code> are set.
+            <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
+            <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_SITE_ID</code> are set.
           </div>
         )}
 
@@ -267,16 +268,16 @@ export default function AdminCheckInPage() {
           />
         )}
 
-        <div className="card mb-6">
+        <div className="rounded border border-border bg-card p-6 mb-6">
           <form onSubmit={onSubmit} className="space-y-4">
             {meta?.events && meta.events.length > 0 && (
               <div>
-                <label className="label" htmlFor="event">
+                <label className="mb-2 block text-sm font-medium text-foreground" htmlFor="event">
                   Gate / product filter (optional)
                 </label>
                 <select
                   id="event"
-                  className="input"
+                  className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm"
                   value={eventId}
                   onChange={(e) => setEventId(e.target.value)}
                 >
@@ -290,7 +291,7 @@ export default function AdminCheckInPage() {
               </div>
             )}
             <div>
-              <label className="label" htmlFor="name">
+              <label className="mb-2 block text-sm font-medium text-foreground" htmlFor="name">
                 Name
               </label>
               <PlayerNameTypeahead
@@ -303,13 +304,13 @@ export default function AdminCheckInPage() {
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="label" htmlFor="email">
+                <label className="mb-2 block text-sm font-medium text-foreground" htmlFor="email">
                   Email
                 </label>
                 <input
                   id="email"
                   type="email"
-                  className="input"
+                  className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm"
                   placeholder="email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -317,13 +318,13 @@ export default function AdminCheckInPage() {
                 />
               </div>
               <div>
-                <label className="label" htmlFor="phone">
+                <label className="mb-2 block text-sm font-medium text-foreground" htmlFor="phone">
                   Phone
                 </label>
                 <input
                   id="phone"
                   type="tel"
-                  className="input"
+                  className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm"
                   placeholder="555-123-4567"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -332,30 +333,30 @@ export default function AdminCheckInPage() {
               </div>
             </div>
             <div>
-              <label className="label" htmlFor="order-id">
+              <label className="mb-2 block text-sm font-medium text-foreground" htmlFor="order-id">
                 Order ID
               </label>
               <input
                 id="order-id"
                 type="text"
-                className="input font-mono text-sm"
+                className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm font-mono text-sm"
                 placeholder="Order number from confirmation email"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
               />
-              <div className="mt-2 space-y-2 text-xs text-gray-500">
+              <div className="mt-2 space-y-2 text-xs text-muted-foreground">
                 <p>
                   Optional. Loads that order from the cached Webflow list and matches the waiver using the buyer on the
                   order (name, email, or phone above override buyer fields when filled). IDs are matched
                   case-insensitively.
                 </p>
                 <details className="group [&_summary::-webkit-details-marker]:hidden [&_summary]:list-none">
-                  <summary className="inline cursor-pointer text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800">
+                  <summary className="inline cursor-pointer text-sm font-medium text-brand underline underline-offset-2 hover:text-brand">
                     Where to find the order number on the customer&apos;s email
                   </summary>
-                  <figure className="mx-auto mt-3 w-full max-w-lg overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <figure className="mx-auto mt-3 w-full max-w-lg overflow-hidden rounded border border-border bg-card shadow-sm">
                     <Image
                       src="/images/order-id-email-sample.png"
                       alt="Sample confirmation email: Order Number appears below the line item, highlighted before the order date"
@@ -364,22 +365,22 @@ export default function AdminCheckInPage() {
                       className="h-auto w-full"
                       sizes="(max-width: 768px) 100vw, 28rem"
                     />
-                    <figcaption className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-center text-gray-600">
+                    <figcaption className="border-t border-border bg-muted px-3 py-2 text-center text-muted-foreground">
                       Example confirmation email
                     </figcaption>
                   </figure>
                 </details>
               </div>
             </div>
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+            {error && <p className="text-destructive text-sm">{error}</p>}
             <div className="flex flex-wrap gap-3">
-              <button type="submit" disabled={loading} className="btn btn-primary flex items-center gap-2">
+              <Button type="submit" disabled={loading}>
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
                 Look up
-              </button>
-              <button type="button" onClick={clearAll} className="btn btn-secondary">
+              </Button>
+              <Button type="button" variant="secondary" onClick={clearAll}>
                 Clear
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -387,14 +388,14 @@ export default function AdminCheckInPage() {
         {result && (
           <>
             {result.ordersStale && result.webflowError && (
-              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+              <div className="mb-4 rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
                 Showing cached orders; refresh failed: {result.webflowError}
               </div>
             )}
 
             {waiver?.ambiguous && waiver.candidates && waiver.candidates.length > 0 && (
-              <div className="card mb-6 border-2 border-amber-200">
-                <div className="flex items-start gap-2 text-amber-900 font-semibold mb-3">
+              <div className="rounded border border-border bg-card p-6 mb-6 border-2 border-status-amber/40">
+                <div className="flex items-start gap-2 text-foreground font-semibold mb-3">
                   <ShieldAlert size={22} />
                   Multiple possible people — pick one to continue
                 </div>
@@ -403,7 +404,7 @@ export default function AdminCheckInPage() {
                     <li key={c.id}>
                       <button
                         type="button"
-                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition"
+                        className="w-full text-left px-4 py-3 rounded border border-border hover:bg-muted transition"
                         onClick={() => {
                           setEmail(c.email);
                           setName(`${c.firstName} ${c.lastName}`.trim());
@@ -417,7 +418,7 @@ export default function AdminCheckInPage() {
                         <span className="font-medium">
                           {c.firstName} {c.lastName}
                         </span>
-                        <span className="text-gray-600 text-sm block">{c.email}</span>
+                        <span className="text-muted-foreground text-sm block">{c.email}</span>
                       </button>
                     </li>
                   ))}
@@ -426,54 +427,54 @@ export default function AdminCheckInPage() {
             )}
 
             {!waiver?.ambiguous && (
-              <div className="card mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Waiver ({result.currentYear})</h2>
+              <div className="rounded border border-border bg-card p-6 mb-6">
+                <h2 className="text-lg font-semibold text-foreground mb-3">Waiver ({result.currentYear})</h2>
                 {waiver?.status === 'active' && (
-                  <div className="flex items-center gap-3 text-green-700">
+                  <div className="flex items-center gap-3 text-status-green">
                     <CheckCircle2 size={28} />
                     <div>
                       <p className="font-semibold">On file for {result.currentYear}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {waiver.waiver?.firstName} {waiver.waiver?.lastName} — {waiver.confidence.replace('_', ' ')}
                       </p>
                     </div>
                   </div>
                 )}
                 {waiver?.status === 'expired' && (
-                  <div className="flex items-center gap-3 text-amber-700">
+                  <div className="flex items-center gap-3 text-status-amber">
                     <ShieldAlert size={28} />
                     <div>
                       <p className="font-semibold">Expired or prior year</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         Last waiver year: {waiver.waiver?.waiverYear} — collect a new waiver if required.
                       </p>
                     </div>
                   </div>
                 )}
                 {waiver?.status === 'not_found' && !waiver.ambiguous && (
-                  <div className="flex items-center gap-3 text-red-700">
+                  <div className="flex items-center gap-3 text-destructive">
                     <XCircle size={28} />
                     <div>
                       <p className="font-semibold">No waiver match</p>
-                      <p className="text-sm text-gray-600">Collect waiver on site or verify spelling/email.</p>
+                      <p className="text-sm text-muted-foreground">Collect waiver on site or verify spelling/email.</p>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            <div className="card mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="rounded border border-border bg-card p-6 mb-6">
+              <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Package size={20} />
                 Purchases (newest first)
               </h2>
               {result.purchases.length === 0 ? (
-                <p className="text-gray-600 text-sm">No matching Webflow orders for this identity.</p>
+                <p className="text-muted-foreground text-sm">No matching Webflow orders for this identity.</p>
               ) : (
                 <ul className="space-y-4">
                   {result.purchases.map((po) => (
-                    <li key={po.orderId} className="border border-gray-100 rounded-lg p-4 bg-gray-50/80">
-                      <p className="text-sm text-gray-500 mb-2">
+                    <li key={po.orderId} className="border border-border rounded p-4 bg-muted/80">
+                      <p className="text-sm text-muted-foreground mb-2">
                         Order <span className="font-mono">{po.orderId}</span> — {formatOrderDate(po.orderedAt)}
                       </p>
                       <ul className="space-y-2">
@@ -487,20 +488,20 @@ export default function AdminCheckInPage() {
                                 <img
                                   src={line.imageUrl}
                                   alt={line.displayName}
-                                  className="h-12 w-12 shrink-0 rounded-md object-cover border border-gray-200 bg-white"
+                                  className="h-12 w-12 shrink-0 rounded-md object-cover border border-border bg-card"
                                 />
                               ) : (
                                 <div
-                                  className="h-12 w-12 shrink-0 rounded-md border border-dashed border-gray-200 bg-gray-100"
+                                  className="h-12 w-12 shrink-0 rounded-md border border-dashed border-border bg-muted"
                                   aria-hidden
                                 />
                               )}
-                              <span className="font-medium text-gray-900">{line.displayName}</span>
+                              <span className="font-medium text-foreground">{line.displayName}</span>
                             </div>
-                            <span className="text-gray-600 text-sm shrink-0">
+                            <span className="text-muted-foreground text-sm shrink-0">
                               Qty {line.quantity}
                               {line.partySize > 1 && (
-                                <span className="ml-2 text-amber-800">(party {line.partySize})</span>
+                                <span className="ml-2 text-foreground">(party {line.partySize})</span>
                               )}
                             </span>
                           </li>
@@ -513,9 +514,9 @@ export default function AdminCheckInPage() {
             </div>
 
             {totalPartyExtraSlots > 0 && !waiver?.ambiguous && (
-              <div className="card">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Other party members</h2>
-                <p className="text-sm text-gray-600 mb-4">
+              <div className="rounded border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-2">Other party members</h2>
+                <p className="text-sm text-muted-foreground mb-4">
                   This purchase may include additional entrants. Check each name against waivers.
                 </p>
                 <div className="space-y-4">
@@ -527,7 +528,7 @@ export default function AdminCheckInPage() {
                         </label>
                         <input
                           id={`party-${i}`}
-                          className="input"
+                          className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm"
                           value={pn}
                           onChange={(e) => {
                             const v = e.target.value;
@@ -542,20 +543,20 @@ export default function AdminCheckInPage() {
                       </div>
                       <button
                         type="button"
-                        className="btn btn-secondary shrink-0"
+                        className="inline-flex items-center justify-center rounded border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted shrink-0"
                         onClick={() => void checkPartyMember(i)}
                         disabled={partyStatus[i] === 'loading'}
                       >
                         {partyStatus[i] === 'loading' ? <Loader2 className="animate-spin" size={18} /> : 'Check waiver'}
                       </button>
                       <div className="sm:w-48 text-sm">
-                        {partyStatus[i] === 'loading' && <span className="text-gray-500">Checking…</span>}
+                        {partyStatus[i] === 'loading' && <span className="text-muted-foreground">Checking…</span>}
                         {partyStatus[i] && partyStatus[i] !== 'loading' && (
                           <span
                             className={
                               (partyStatus[i] as WaiverPayload).status === 'active'
-                                ? 'text-green-700 font-medium'
-                                : 'text-red-700'
+                                ? 'text-status-green font-medium'
+                                : 'text-destructive'
                             }
                           >
                             {(partyStatus[i] as WaiverPayload).status === 'active'

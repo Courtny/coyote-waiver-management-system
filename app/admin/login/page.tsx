@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button, Card, CardContent, Input, Label } from '@coyote-force/ui';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -39,58 +41,58 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="card max-w-md w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          Admin Login
-        </h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="form-group">
-            <label className="label" htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              className="input"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="label" htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              className="input"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          {error && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
-              {error}
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="px-6 py-2">
+          <h1 className="font-heading mb-8 text-center text-3xl font-semibold tracking-tight text-foreground">
+            Admin Login
+          </h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                type="text"
+                id="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                type="password"
+                id="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-        <div className="mt-6 text-center">
-          <a href="/" className="text-blue-600 hover:text-blue-700 underline">
-            Back to Home
-          </a>
-        </div>
-      </div>
+            {error && (
+              <div className="rounded border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full uppercase tracking-[0.08em]"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <Button variant="link" asChild>
+              <Link href="/">Back to Home</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

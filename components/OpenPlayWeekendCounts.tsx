@@ -46,7 +46,7 @@ export function OpenPlayWeekendCounts() {
   if (!data) {
     return (
       <div
-        className="mt-6 flex justify-center items-center gap-2 text-gray-500 text-sm"
+        className="mt-6 flex justify-center items-center gap-2 text-muted-foreground text-sm"
         aria-busy="true"
         aria-live="polite"
       >
@@ -61,28 +61,28 @@ export function OpenPlayWeekendCounts() {
   }
 
   return (
-    <div className="mt-6 pt-6 border-t border-gray-200/80 text-left w-full max-w-md mx-auto">
-      <div className="flex items-center gap-2 text-gray-800 font-semibold text-sm mb-2">
-        <Users className="h-4 w-4 shrink-0 text-coyote-600" aria-hidden />
+    <div className="mt-6 pt-6 border-t border-border text-left w-full max-w-md mx-auto">
+      <div className="flex items-center gap-2 text-foreground font-semibold text-sm mb-2">
+        <Users className="h-4 w-4 shrink-0 text-brand" aria-hidden />
         <span>Airsoft Open Play — this week</span>
       </div>
-      <p className="text-xs text-gray-500 mb-3">{data.weekLabel} (Eastern)</p>
+      <p className="text-xs text-muted-foreground mb-3">{data.weekLabel} (Eastern)</p>
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
-        <div className="rounded-lg bg-gray-50 px-4 py-3 border border-gray-100">
-          <div className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Saturday</div>
-          <div className="text-2xl font-bold text-gray-900 tabular-nums">{data.saturdayDisplay}</div>
+        <div className="rounded bg-muted px-4 py-3 border border-border">
+          <div className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Saturday</div>
+          <div className="text-2xl font-bold text-foreground tabular-nums">{data.saturdayDisplay}</div>
         </div>
-        <div className="rounded-lg bg-gray-50 px-4 py-3 border border-gray-100">
-          <div className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Sunday</div>
-          <div className="text-2xl font-bold text-gray-900 tabular-nums">{data.sundayDisplay}</div>
+        <div className="rounded bg-muted px-4 py-3 border border-border">
+          <div className="text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Sunday</div>
+          <div className="text-2xl font-bold text-foreground tabular-nums">{data.sundayDisplay}</div>
         </div>
       </div>
-      <p className="mt-3 text-xs text-gray-500">
+      <p className="mt-3 text-xs text-muted-foreground">
         Ticket holders this week (updates periodically). Counts of 1 or 2 are shown as &quot;Under 3&quot;
         for privacy.
       </p>
       {data.ordersStale && (
-        <p className="mt-1 text-xs text-amber-700">Using last known totals; refresh may be delayed.</p>
+        <p className="mt-1 text-xs text-status-amber">Using last known totals; refresh may be delayed.</p>
       )}
     </div>
   );

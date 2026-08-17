@@ -1,3 +1,5 @@
+import { Skeleton } from '@coyote-force/ui';
+
 type TableSkeletonProps = {
   columns: number;
   rows?: number;
@@ -21,21 +23,21 @@ export function TableSkeleton({
     >
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b-2 border-gray-200">
+          <tr className="border-b-2 border-border">
             {Array.from({ length: columns }, (_, i) => (
               <th key={i} className="px-4 py-3 text-left">
-                <div className="h-4 max-w-[7rem] rounded bg-gray-200 animate-pulse" />
+                <Skeleton className="h-4 max-w-[7rem]" />
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {Array.from({ length: rows }, (_, ri) => (
-            <tr key={ri} className="border-b border-gray-200">
+            <tr key={ri} className="border-b border-border">
               {Array.from({ length: columns }, (_, ci) => (
                 <td key={ci} className="px-4 py-3">
-                  <div
-                    className="h-4 rounded bg-gray-100 animate-pulse"
+                  <Skeleton
+                    className="h-4"
                     style={{ maxWidth: ci === 0 ? '65%' : '92%' }}
                   />
                 </td>

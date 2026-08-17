@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { Button } from '@coyote-force/ui';
 import { LogOut, Menu, X } from 'lucide-react';
 
 type NavItem = {
@@ -44,13 +45,13 @@ const items: NavItem[] = [
 
 function linkClass(active: boolean, opts?: { block?: boolean }) {
   const base = opts?.block
-    ? 'block w-full rounded-md px-3 py-3 text-left text-sm font-medium transition-colors sm:py-2.5'
-    : 'rounded-md px-2.5 py-2 text-sm font-medium transition-colors lg:px-3';
+    ? 'block w-full rounded px-3 py-3 text-left text-sm font-medium transition-colors sm:py-2.5'
+    : 'rounded px-2.5 py-2 text-sm font-medium transition-colors lg:px-3';
   return [
     base,
     active
-      ? 'bg-blue-50 text-blue-700'
-      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+      ? 'bg-primary/10 text-brand'
+      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
   ].join(' ');
 }
 
@@ -81,19 +82,18 @@ export default function AppTopNav() {
   const navId = 'admin-main-nav-menu';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <nav
         className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:px-4"
         aria-label="Main"
       >
         <Link
           href="/"
-          className="min-w-0 shrink truncate text-sm font-semibold text-gray-900 hover:text-blue-700 sm:text-base"
+          className="min-w-0 shrink truncate font-heading text-sm font-semibold text-foreground hover:text-brand sm:text-base"
         >
           Coyote Waiver
         </Link>
 
-        {/* Desktop / tablet: inline nav */}
         <div className="hidden min-w-0 flex-1 items-center justify-end gap-1 lg:flex lg:gap-2">
           <ul className="flex flex-wrap items-center justify-end gap-0.5 sm:gap-1 lg:gap-2">
             {items.map(({ href, label, sublabel, isActive }) => {
@@ -104,7 +104,7 @@ export default function AppTopNav() {
                     <span className="hidden xl:inline">
                       {label}
                       {sublabel ? (
-                        <span className="whitespace-nowrap font-normal text-gray-500"> ({sublabel})</span>
+                        <span className="whitespace-nowrap font-normal text-muted-foreground"> ({sublabel})</span>
                       ) : null}
                     </span>
                     <span className="xl:hidden">
@@ -121,39 +121,40 @@ export default function AppTopNav() {
               );
             })}
           </ul>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleLogout}
-            className="ml-0.5 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
             title="Log out"
           >
             <LogOut size={16} className="shrink-0" aria-hidden />
-            <span>Logout</span>
-          </button>
+            Logout
+          </Button>
         </div>
 
-        {/* Narrow: menu toggle */}
-        <button
+        <Button
           type="button"
-          className="inline-flex shrink-0 items-center justify-center rounded-md p-2.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
           onClick={() => setMenuOpen((o) => !o)}
           aria-expanded={menuOpen}
           aria-controls={navId}
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
         >
           {menuOpen ? <X size={22} strokeWidth={2} aria-hidden /> : <Menu size={22} strokeWidth={2} aria-hidden />}
-        </button>
+        </Button>
       </nav>
 
-      {/* Mobile / narrow panel */}
       <div
         id={navId}
         className={[
-          'border-t border-gray-100 bg-white lg:hidden',
+          'border-t border-border bg-background lg:hidden',
           menuOpen ? 'block' : 'hidden',
         ].join(' ')}
       >
-        <ul className="mx-auto max-w-7xl divide-y divide-gray-100 px-2 py-1 sm:px-4">
+        <ul className="mx-auto max-w-7xl divide-y divide-border px-2 py-1 sm:px-4">
           {items.map(({ href, label, sublabel, isActive }) => {
             const active = isActive(pathname);
             return (
@@ -166,22 +167,23 @@ export default function AppTopNav() {
                 >
                   <span className="block">{label}</span>
                   {sublabel ? (
-                    <span className="mt-0.5 block text-xs font-normal text-gray-500">{sublabel}</span>
+                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{sublabel}</span>
                   ) : null}
                 </Link>
               </li>
             );
           })}
         </ul>
-        <div className="mx-auto max-w-7xl border-t border-gray-100 px-2 pb-3 pt-1 sm:px-4">
-          <button
+        <div className="mx-auto max-w-7xl border-t border-border px-2 pb-3 pt-1 sm:px-4">
+          <Button
             type="button"
+            variant="ghost"
+            className="w-full"
             onClick={() => void handleLogout()}
-            className="flex w-full items-center justify-center gap-2 rounded-md px-3 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
           >
             <LogOut size={18} aria-hidden />
             Log out
-          </button>
+          </Button>
         </div>
       </div>
     </header>

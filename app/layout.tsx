@@ -1,11 +1,18 @@
 import type { Metadata } from 'next'
-import { Libre_Franklin } from 'next/font/google'
+import { Inter_Tight, Fragment_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const libreFranklin = Libre_Franklin({
+const interTight = Inter_Tight({
   subsets: ['latin'],
-  variable: '--font-libre-franklin',
+  variable: '--font-sans-loaded',
+  display: 'swap',
+})
+
+const fragmentMono = Fragment_Mono({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-mono-loaded',
   display: 'swap',
 })
 
@@ -47,8 +54,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={libreFranklin.variable}>
-      <body>
+    <html lang="en" className={`light ${interTight.variable} ${fragmentMono.variable}`}>
+      <body className="bg-background font-sans text-foreground antialiased">
         {children}
         <Analytics />
       </body>

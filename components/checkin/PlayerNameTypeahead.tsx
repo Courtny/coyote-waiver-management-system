@@ -142,7 +142,7 @@ export function PlayerNameTypeahead({
 
   return (
     <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" size={20} />
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground z-10" size={20} />
       <input
         id={id}
         type="text"
@@ -152,7 +152,7 @@ export function PlayerNameTypeahead({
         aria-controls={`${id}-suggestions`}
         aria-activedescendant={activeIndex >= 0 ? `${id}-opt-${activeIndex}` : undefined}
         aria-autocomplete="list"
-        className="input pl-12"
+        className="flex h-8 w-full rounded border border-input bg-transparent px-2.5 py-1 text-sm pl-12"
         placeholder={placeholder}
         value={value}
         onChange={(e) => {
@@ -171,13 +171,13 @@ export function PlayerNameTypeahead({
         }}
       />
       {isLoading && q.length >= 2 && (
-        <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" size={16} />
+        <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" size={16} />
       )}
       {suggestions.length > 0 && q.length >= 2 && (
         <div
           id={`${id}-suggestions`}
           role="listbox"
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-auto"
+          className="absolute z-50 w-full mt-1 bg-card border border-input rounded shadow-lg max-h-64 overflow-auto"
         >
           {suggestions.map((suggestion, index) => (
             <div
@@ -186,7 +186,7 @@ export function PlayerNameTypeahead({
               role="option"
               aria-selected={index === activeIndex}
               className={`px-4 py-3 cursor-pointer transition-colors ${
-                index === activeIndex ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'
+                index === activeIndex ? 'bg-primary/10 border-l-4 border-brand' : 'hover:bg-muted'
               }`}
               onMouseEnter={() => setActiveIndex(index)}
               onMouseDown={(e) => {
@@ -199,16 +199,16 @@ export function PlayerNameTypeahead({
               }}
             >
               <div
-                className="font-medium text-gray-900"
+                className="font-medium text-foreground"
                 dangerouslySetInnerHTML={{
                   __html: highlightMatch(suggestion.primary, q),
                 }}
               />
               {suggestion.secondary && (
-                <div className="text-sm text-gray-500 mt-1">{suggestion.secondary}</div>
+                <div className="text-sm text-muted-foreground mt-1">{suggestion.secondary}</div>
               )}
               {suggestion.hasMatchingMinors && suggestion.minorNames && (
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-sm text-muted-foreground mt-1">
                   <span className="font-semibold">Minors: </span>
                   <span
                     dangerouslySetInnerHTML={{
@@ -224,7 +224,7 @@ export function PlayerNameTypeahead({
       {suggestions.length === 0 && q.length >= 2 && !isLoading && !suppressEmptyState && (
         <div
           role="listbox"
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg px-4 py-3 text-gray-500 text-center"
+          className="absolute z-50 w-full mt-1 bg-card border border-input rounded shadow-lg px-4 py-3 text-muted-foreground text-center"
         >
           No results found
         </div>

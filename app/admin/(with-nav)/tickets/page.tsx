@@ -46,8 +46,8 @@ export default function AdminTicketsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default function AdminTicketsPage() {
       description={
         <>
           Totals from cached Webflow orders, by product and SKU.{' '}
-          <Link href="/admin/checkin" className="font-medium text-blue-600 hover:text-blue-800">
+          <Link href="/admin/checkin" className="font-medium text-brand hover:text-brand">
             Player check-in →
           </Link>
         </>
@@ -72,7 +72,7 @@ export default function AdminTicketsPage() {
           eventsConfig={meta.eventsConfig}
         />
       )}
-      <div className="card">
+      <div className="rounded border border-border bg-card p-6">
         <EventTicketCounts webflowConfigured={Boolean(meta?.webflowConfigured)} />
       </div>
     </AdminPageShell>

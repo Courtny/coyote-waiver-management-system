@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@coyote-force/ui';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 
 type CustomerRow = {
@@ -95,8 +96,8 @@ export default function AdminCustomersLeaderboardPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -107,74 +108,75 @@ export default function AdminCustomersLeaderboardPage() {
       backHref="/admin/dashboard"
       description={
         <>
-          Spend uses Webflow order totals (prefer <code className="text-sm bg-gray-100 px-1 rounded">customerPaid</code>
-          , then <code className="text-sm bg-gray-100 px-1 rounded">netAmount</code>
-          , else sum of line <code className="text-sm bg-gray-100 px-1 rounded">rowTotal</code>). Amounts prefer the
-          formatted <code className="text-sm bg-gray-100 px-1 rounded">string</code> field; bare integer{' '}
-          <code className="text-sm bg-gray-100 px-1 rounded">value</code> is treated as cents for USD-like currencies.
+          Spend uses Webflow order totals (prefer <code className="text-sm bg-muted px-1 rounded">customerPaid</code>
+          , then <code className="text-sm bg-muted px-1 rounded">netAmount</code>
+          , else sum of line <code className="text-sm bg-muted px-1 rounded">rowTotal</code>). Amounts prefer the
+          formatted <code className="text-sm bg-muted px-1 rounded">string</code> field; bare integer{' '}
+          <code className="text-sm bg-muted px-1 rounded">value</code> is treated as cents for USD-like currencies.
           If totals look wrong, set env{' '}
-          <code className="text-sm bg-gray-100 px-1 rounded">CHECKIN_WEBFLOW_MONEY_MINOR_UNITS=0</code>. Ticket qty is
+          <code className="text-sm bg-muted px-1 rounded">CHECKIN_WEBFLOW_MONEY_MINOR_UNITS=0</code>. Ticket qty is
           the sum of all line quantities.{' '}
-          <Link href="/admin/tickets" className="font-medium text-blue-600 hover:text-blue-800">
+          <Link href="/admin/tickets" className="font-medium text-brand hover:text-brand">
             Event ticket counts →
           </Link>
         </>
       }
     >
-      <div className="card space-y-4">
+      <div className="rounded border border-border bg-card p-6 space-y-4">
         {ordersStale && webflowError && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+          <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
             Showing cached orders; refresh failed: {webflowError}
           </div>
         )}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {customers.length > 0 ? (
               <>
                 Top {customers.length} customer{customers.length !== 1 ? 's' : ''} by spend.
               </>
             ) : null}
           </p>
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => void load()}
             disabled={loading}
-            className="btn btn-secondary inline-flex items-center gap-2 self-start sm:self-auto"
+            className="self-start sm:self-auto"
           >
             {loading ? <Loader2 size={16} className="animate-spin shrink-0" aria-hidden /> : null}
             Refresh
-          </button>
+          </Button>
         </div>
 
-        {error ? <p className="text-red-600 text-sm">{error}</p> : null}
-        {emptyMessage ? <p className="text-gray-600 text-sm">{emptyMessage}</p> : null}
+        {error ? <p className="text-destructive text-sm">{error}</p> : null}
+        {emptyMessage ? <p className="text-muted-foreground text-sm">{emptyMessage}</p> : null}
 
         {customers.length > 0 ? (
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="w-full min-w-[36rem] border-collapse text-sm">
               <thead>
-                <tr className="border-b-2 border-gray-200 text-left">
-                  <th className="px-3 py-3 font-semibold text-gray-700 w-12">#</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700">Name</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700">Email</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 text-right">Orders</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 text-right">Tickets</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 text-right">Spend</th>
+                <tr className="border-b-2 border-border text-left">
+                  <th className="px-3 py-3 font-semibold text-foreground w-12">#</th>
+                  <th className="px-3 py-3 font-semibold text-foreground">Name</th>
+                  <th className="px-3 py-3 font-semibold text-foreground">Email</th>
+                  <th className="px-3 py-3 font-semibold text-foreground text-right">Orders</th>
+                  <th className="px-3 py-3 font-semibold text-foreground text-right">Tickets</th>
+                  <th className="px-3 py-3 font-semibold text-foreground text-right">Spend</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.map((row, i) => (
-                  <tr key={row.email} className="border-b border-gray-100 hover:bg-gray-50/80">
-                    <td className="px-3 py-2.5 text-gray-500 tabular-nums">{i + 1}</td>
-                    <td className="px-3 py-2.5 text-gray-900">{row.name}</td>
-                    <td className="px-3 py-2.5 text-gray-700 break-all">{row.email}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-900">{row.orderCount}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-900">{row.totalTickets}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-900">
+                  <tr key={row.email} className="border-b border-border hover:bg-muted/80">
+                    <td className="px-3 py-2.5 text-muted-foreground tabular-nums">{i + 1}</td>
+                    <td className="px-3 py-2.5 text-foreground">{row.name}</td>
+                    <td className="px-3 py-2.5 text-foreground break-all">{row.email}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-foreground">{row.orderCount}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-foreground">{row.totalTickets}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-foreground">
                       {formatSpend(row.totalSpend, row.currency)}
                       {!row.currency && row.totalSpend !== 0 ? (
-                        <span className="block text-xs font-normal text-gray-500">(no currency on order)</span>
+                        <span className="block text-xs font-normal text-muted-foreground">(no currency on order)</span>
                       ) : null}
                     </td>
                   </tr>
