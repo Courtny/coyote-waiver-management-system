@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildEventAttendanceLines, flagEventPatchRecipients, resolveEventPatchCount, resolveEventTitle } from '@/lib/checkin-attendance';
+import {
+  buildEventAttendanceLines,
+  defaultShowAsActive,
+  flagEventPatchRecipients,
+  resolveEventPatchCount,
+  resolveEventTitle,
+} from '@/lib/checkin-attendance';
 import { enrichAttendanceLinesWithWaiverIndicators } from '@/lib/attendance-waiver-enrich';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { getEventActiveFlag } from '@/lib/event-ticket-active';
 import { attachCheckinStatus, countCheckedInTickets, getCheckinsForProduct } from '@/lib/ticket-checkin';
 import { WebflowOrdersError } from '@/lib/webflow-orders';
 
@@ -38,6 +45,9 @@ export async function GET(request: NextRequest) {
     const checkins = await getCheckinsForProduct(productId);
     const linesWithCheckins = attachCheckinStatus(lines, checkins);
     const { checkedInTotal, ticketTotal } = countCheckedInTickets(linesWithCheckins);
+    const storedActive = await getEventActiveFlag(productId);
+    const showAsActive =
+      storedActive !== undefined ? storedActive : defaultShowAsActive({ productId, title });
 
     return NextResponse.json({
       productId,
@@ -45,6 +55,7 @@ export async function GET(request: NextRequest) {
       lines: linesWithCheckins,
       checkedInTotal,
       ticketTotal,
+      showAsActive,
       ordersStale: stale,
       webflowError: error?.message,
     });

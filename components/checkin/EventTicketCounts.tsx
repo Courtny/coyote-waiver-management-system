@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { EventAttendanceLine } from '@/lib/checkin-attendance';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
+import { Label, Switch } from '@coyote-force/ui';
 
 type SkuBreakdownRow = {
   sku: string;
@@ -31,6 +32,7 @@ type EventAttendanceSummary = {
   totalTickets: number;
   skuBreakdown: SkuBreakdownRow[];
   imageUrl?: string;
+  showAsActive?: boolean;
 };
 
 function formatOrderDate(iso: string | null): string {
@@ -69,6 +71,8 @@ type EventDetailPanelProps = {
   detailLoading: boolean;
   ordersStale: boolean;
   webflowError?: string;
+  showAsActive: boolean;
+  onShowAsActiveChange: (next: boolean) => Promise<void>;
   onBack: () => void;
   onLinesChange: (lines: EventAttendanceLine[]) => void;
 };
@@ -194,6 +198,8 @@ function EventDetailPanel({
   detailLoading,
   ordersStale,
   webflowError,
+  showAsActive,
+  onShowAsActiveChange,
   onBack,
   onLinesChange,
 }: EventDetailPanelProps) {
@@ -203,6 +209,7 @@ function EventDetailPanel({
   const [sortKey, setSortKey] = useState<'quantity' | 'date'>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [uncheckedOnly, setUncheckedOnly] = useState(false);
+  const [savingActive, setSavingActive] = useState(false);
 
   useEffect(() => {
     if (detailLoading) return;
@@ -325,21 +332,44 @@ function EventDetailPanel({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold text-foreground">{detail.title}</h2>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">
-            {checkedInTotal} / {ticketTotal} checked in
-          </span>
-          {' · '}
-          {textFilteredLines.length} line{textFilteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
-          {filteredLines.length !== detail.lines.length ? (
-            <span className="text-muted-foreground"> (of {detail.lines.length} lines)</span>
-          ) : null}
-          {searchQuery.trim() && textFilteredLines.length < filteredLines.length ? (
-            <span className="text-muted-foreground"> (of {filteredLines.length} matching SKU filters)</span>
-          ) : null}
-        </p>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-as-active"
+              size="sm"
+              checked={showAsActive}
+              disabled={savingActive}
+              onCheckedChange={(checked) => {
+                void (async () => {
+                  setSavingActive(true);
+                  try {
+                    await onShowAsActiveChange(checked);
+                  } finally {
+                    setSavingActive(false);
+                  }
+                })();
+              }}
+            />
+            <Label htmlFor="show-as-active" className="text-sm font-medium">
+              Show as active
+            </Label>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {checkedInTotal} / {ticketTotal} checked in
+            </span>
+            {' · '}
+            {textFilteredLines.length} line{textFilteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
+            {filteredLines.length !== detail.lines.length ? (
+              <span className="text-muted-foreground"> (of {detail.lines.length} lines)</span>
+            ) : null}
+            {searchQuery.trim() && textFilteredLines.length < filteredLines.length ? (
+              <span className="text-muted-foreground"> (of {filteredLines.length} matching SKU filters)</span>
+            ) : null}
+          </p>
+        </div>
       </div>
 
       {detailLoading ? (
@@ -641,6 +671,70 @@ function EventDetailPanel({
 
 
 
+function EventCard({
+  event,
+  onOpen,
+}: {
+  event: EventAttendanceSummary;
+  onOpen: (summary: EventAttendanceSummary) => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(event)}
+        className="w-full text-left card py-5 px-6 hover:border-blue-300 hover:shadow-md transition flex flex-row gap-4 items-start group"
+      >
+        {event.imageUrl ? (
+          <img
+            src={event.imageUrl}
+            alt={event.title}
+            className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded object-cover border border-border bg-card"
+          />
+        ) : (
+          <div
+            className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded border border-dashed border-border bg-muted"
+            aria-hidden
+          />
+        )}
+        <div className="flex flex-col gap-3 min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-semibold text-foreground text-lg pr-2">{event.title}</h3>
+            <ChevronRight
+              className="text-muted-foreground group-hover:text-link shrink-0 mt-1"
+              size={20}
+              aria-hidden
+            />
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <Users size={16} className="text-muted-foreground" />
+              {event.orderCount} order{event.orderCount !== 1 ? 's' : ''}
+            </span>
+            <span className="font-medium text-foreground">{event.totalTickets} tickets</span>
+          </div>
+        </div>
+      </button>
+    </li>
+  );
+}
+
+function EventCardGrid({
+  events,
+  onOpen,
+}: {
+  events: EventAttendanceSummary[];
+  onOpen: (summary: EventAttendanceSummary) => void;
+}) {
+  return (
+    <ul className="grid gap-4 sm:grid-cols-2">
+      {events.map((ev) => (
+        <EventCard key={ev.productId} event={ev} onOpen={onOpen} />
+      ))}
+    </ul>
+  );
+}
+
 export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: boolean }) {
   const router = useRouter();
   const [events, setEvents] = useState<EventAttendanceSummary[]>([]);
@@ -655,6 +749,10 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
     lines: EventAttendanceLine[];
   } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailShowAsActive, setDetailShowAsActive] = useState(false);
+
+  const activeEvents = useMemo(() => events.filter((e) => e.showAsActive), [events]);
+  const pastEvents = useMemo(() => events.filter((e) => !e.showAsActive), [events]);
 
   const loadSummary = useCallback(async () => {
     setError('');
@@ -671,7 +769,11 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         setEvents([]);
         return;
       }
-      setEvents(data.events || []);
+      setEvents(
+        Array.isArray(data.active) || Array.isArray(data.past)
+          ? [...(data.active || []), ...(data.past || [])]
+          : data.events || []
+      );
       setOrdersStale(Boolean(data.ordersStale));
       setWebflowError(data.webflowError);
     } catch {
@@ -688,6 +790,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
 
   const openEvent = async (summary: EventAttendanceSummary) => {
     setDetail({ productId: summary.productId, title: summary.title, lines: [] });
+    setDetailShowAsActive(Boolean(summary.showAsActive));
     setDetailLoading(true);
     setError('');
     try {
@@ -709,6 +812,9 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         title: data.title,
         lines: data.lines || [],
       });
+      if (typeof data.showAsActive === 'boolean') {
+        setDetailShowAsActive(data.showAsActive);
+      }
       setOrdersStale(Boolean(data.ordersStale));
       setWebflowError(data.webflowError);
     } catch {
@@ -722,6 +828,35 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
   const closeDetail = () => {
     setDetail(null);
     setDetailLoading(false);
+  };
+
+  const handleShowAsActiveChange = async (next: boolean) => {
+    if (!detail) return;
+    const productId = detail.productId;
+    const previous = detailShowAsActive;
+    setDetailShowAsActive(next);
+    setEvents((prev) =>
+      prev.map((ev) => (ev.productId === productId ? { ...ev, showAsActive: next } : ev))
+    );
+    try {
+      const res = await fetch('/api/checkin/attendance/active', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, show_as_active: next }),
+      });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        throw new Error('Failed to save');
+      }
+    } catch {
+      setDetailShowAsActive(previous);
+      setEvents((prev) =>
+        prev.map((ev) => (ev.productId === productId ? { ...ev, showAsActive: previous } : ev))
+      );
+    }
   };
 
   if (!webflowConfigured) {
@@ -740,6 +875,8 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         detailLoading={detailLoading}
         ordersStale={ordersStale}
         webflowError={webflowError}
+        showAsActive={detailShowAsActive}
+        onShowAsActiveChange={handleShowAsActiveChange}
         onBack={closeDetail}
         onLinesChange={(lines) => setDetail((d) => (d ? { ...d, lines } : d))}
       />
@@ -794,47 +931,23 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
       ) : events.length === 0 ? (
         <p className="text-muted-foreground text-sm py-8 text-center">No ecommerce line items found in orders yet.</p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {events.map((ev) => (
-            <li key={ev.productId}>
-              <button
-                type="button"
-                onClick={() => void openEvent(ev)}
-                className="w-full text-left card py-5 px-6 hover:border-blue-300 hover:shadow-md transition flex flex-row gap-4 items-start group"
-              >
-                {ev.imageUrl ? (
-                  <img
-                    src={ev.imageUrl}
-                    alt={ev.title}
-                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded object-cover border border-border bg-card"
-                  />
-                ) : (
-                  <div
-                    className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded border border-dashed border-border bg-muted"
-                    aria-hidden
-                  />
-                )}
-                <div className="flex flex-col gap-3 min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-foreground text-lg pr-2">{ev.title}</h3>
-                    <ChevronRight
-                      className="text-muted-foreground group-hover:text-link shrink-0 mt-1"
-                      size={20}
-                      aria-hidden
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Users size={16} className="text-muted-foreground" />
-                      {ev.orderCount} order{ev.orderCount !== 1 ? 's' : ''}
-                    </span>
-                    <span className="font-medium text-foreground">{ev.totalTickets} tickets</span>
-                  </div>
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-8">
+          {activeEvents.length > 0 ? (
+            <EventCardGrid events={activeEvents} onOpen={(ev) => void openEvent(ev)} />
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              No active events. Open an event and turn on Show as active to pin it here.
+            </p>
+          )}
+          {pastEvents.length > 0 ? (
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Past events
+              </h2>
+              <EventCardGrid events={pastEvents} onOpen={(ev) => void openEvent(ev)} />
+            </section>
+          ) : null}
+        </div>
       )}
     </div>
   );

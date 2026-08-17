@@ -15,6 +15,8 @@ export type EventAttendanceSummary = {
   totalTickets: number;
   skuBreakdown: SkuBreakdownRow[];
   imageUrl?: string;
+  /** True when the event should appear in the Active tickets section. */
+  showAsActive?: boolean;
 };
 
 export type WaiverIndicatorDto = {
@@ -92,6 +94,44 @@ export function compareAttendanceSummaries(
   const timeDiff = productIdCreatedAtMs(b.productId) - productIdCreatedAtMs(a.productId);
   if (timeDiff !== 0) return timeDiff;
   return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+}
+
+/** Open Play defaults to Active; other products default to Past. */
+export function defaultShowAsActive(summary: { productId: string; title: string }): boolean {
+  return openPlayPinRank(summary) < 2;
+}
+
+/** Stored flag wins; otherwise Open Play is Active and everything else is Past. */
+export function resolveShowAsActive(
+  summary: { productId: string; title: string },
+  flags: Map<string, boolean>
+): boolean {
+  const stored = flags.get(summary.productId.trim());
+  if (stored !== undefined) return stored;
+  return defaultShowAsActive(summary);
+}
+
+export function applyActiveFlags(
+  summaries: EventAttendanceSummary[],
+  flags: Map<string, boolean>
+): EventAttendanceSummary[] {
+  return summaries.map((s) => ({
+    ...s,
+    showAsActive: resolveShowAsActive(s, flags),
+  }));
+}
+
+export function splitAttendanceSummaries(summaries: EventAttendanceSummary[]): {
+  active: EventAttendanceSummary[];
+  past: EventAttendanceSummary[];
+} {
+  const active: EventAttendanceSummary[] = [];
+  const past: EventAttendanceSummary[] = [];
+  for (const s of summaries) {
+    if (s.showAsActive) active.push(s);
+    else past.push(s);
+  }
+  return { active, past };
 }
 
 /** Resolve display title for a product id using cached orders + CHECKIN_EVENTS_JSON */

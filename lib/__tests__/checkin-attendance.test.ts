@@ -11,6 +11,10 @@ import {
   openPlayPinRank,
   productIdCreatedAtMs,
   resolveEventPatchCount,
+  applyActiveFlags,
+  defaultShowAsActive,
+  resolveShowAsActive,
+  splitAttendanceSummaries,
 } from '../checkin-attendance';
 import type { EventAttendanceLine } from '../checkin-attendance';
 import type { NormalizedOrder } from '../webflow-orders';
@@ -216,5 +220,49 @@ describe('flagEventPatchRecipients', () => {
     assert.equal(lines.find((l) => l.orderId === 'a')?.receivesEventPatch, true);
     assert.equal(lines.find((l) => l.orderId === 'b')?.receivesEventPatch, true);
     assert.equal(lines.find((l) => l.orderId === 'c')?.receivesEventPatch, undefined);
+  });
+});
+
+describe('resolveShowAsActive', () => {
+  const airsoft = { productId: AIRSOFT_OPEN_PLAY_PRODUCT_ID, title: 'Coyote Airsoft - Open Play' };
+  const paintball = { productId: PAINTBALL_OPEN_PLAY_PRODUCT_ID, title: 'Coyote Paintball - Open Play' };
+  const ftx = { productId: '6a4d0c5f884e0f0f15dcfd74', title: 'Airsoft FTX: Dead Silence' };
+
+  it('defaults Open Play to active and other events to past', () => {
+    assert.equal(defaultShowAsActive(airsoft), true);
+    assert.equal(defaultShowAsActive(paintball), true);
+    assert.equal(defaultShowAsActive(ftx), false);
+    assert.equal(resolveShowAsActive(airsoft, new Map()), true);
+    assert.equal(resolveShowAsActive(ftx, new Map()), false);
+  });
+
+  it('lets a stored flag override the default', () => {
+    assert.equal(resolveShowAsActive(airsoft, new Map([[AIRSOFT_OPEN_PLAY_PRODUCT_ID, false]])), false);
+    assert.equal(resolveShowAsActive(ftx, new Map([['6a4d0c5f884e0f0f15dcfd74', true]])), true);
+  });
+});
+
+describe('splitAttendanceSummaries', () => {
+  it('splits flagged summaries into active and past while preserving order', () => {
+    const olderEventId = '688a250f14eccd4a64e6e7fd';
+    const newerEventId = '6a4d0c5f884e0f0f15dcfd74';
+    const orders = [
+      orderWithProduct(olderEventId, 'Airsoft FTX: Blockade'),
+      orderWithProduct(newerEventId, 'Airsoft FTX: Dead Silence'),
+      orderWithProduct(PAINTBALL_OPEN_PLAY_PRODUCT_ID, 'Coyote Paintball - Open Play'),
+      orderWithProduct(AIRSOFT_OPEN_PLAY_PRODUCT_ID, 'Coyote Airsoft - Open Play'),
+    ];
+    const flags = new Map<string, boolean>([[newerEventId, true]]);
+    const summaries = applyActiveFlags(buildAttendanceSummaries(orders, [], {}), flags);
+    const { active, past } = splitAttendanceSummaries(summaries);
+
+    assert.deepEqual(
+      active.map((s) => s.productId),
+      [AIRSOFT_OPEN_PLAY_PRODUCT_ID, PAINTBALL_OPEN_PLAY_PRODUCT_ID, newerEventId]
+    );
+    assert.deepEqual(
+      past.map((s) => s.productId),
+      [olderEventId]
+    );
   });
 });

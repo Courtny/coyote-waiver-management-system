@@ -95,6 +95,15 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_ticket_checkins_product ON ticket_checkins("productId")
     `);
 
+    // Per-product "Show as active" on the event tickets list
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS event_ticket_active (
+        "productId" TEXT PRIMARY KEY,
+        "showAsActive" BOOLEAN NOT NULL,
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create indexes for faster searches
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_waiver_name ON waivers(lastName, firstName)

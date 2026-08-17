@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildAttendanceSummaries } from '@/lib/checkin-attendance';
+import { applyActiveFlags, buildAttendanceSummaries, splitAttendanceSummaries } from '@/lib/checkin-attendance';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { getEventActiveFlags } from '@/lib/event-ticket-active';
 import { WebflowOrdersError } from '@/lib/webflow-orders';
 
 export async function GET(request: NextRequest) {
@@ -13,9 +14,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const { orders, stale, error } = await getCachedWebflowOrders();
-    const eventSummaries = buildAttendanceSummaries(orders, events, skuDisplay);
+    const flags = await getEventActiveFlags();
+    const eventSummaries = applyActiveFlags(
+      buildAttendanceSummaries(orders, events, skuDisplay),
+      flags
+    );
+    const { active, past } = splitAttendanceSummaries(eventSummaries);
 
     return NextResponse.json({
+      active,
+      past,
       events: eventSummaries,
       ordersStale: stale,
       webflowError: error?.message,
@@ -23,7 +31,7 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     if (e instanceof WebflowOrdersError) {
       return NextResponse.json(
-        { error: e.message, code: 'webflow', events: [] },
+        { error: e.message, code: 'webflow', active: [], past: [], events: [] },
         { status: e.status >= 400 && e.status < 600 ? e.status : 502 }
       );
     }
