@@ -66,6 +66,10 @@
   --status-red: oklch(0.72 0.23 16);
   --status-purple: oklch(0.72 0.22 292);
 
+  --link: #7eafff;
+  --link-hover: #a8ceff;
+  --info: var(--link);
+
   --secondary-coral: var(--khaki);
 }
 
@@ -112,6 +116,10 @@
   --status-amber: oklch(0.716 0.165 70.08);
   --status-red: oklch(0.645 0.246 16.439);
   --status-purple: oklch(0.592 0.249 292.581);
+
+  --link: #1c56c8;
+  --link-hover: #1547a8;
+  --info: var(--link);
 
   --secondary-coral: var(--khaki);
 }
@@ -183,6 +191,10 @@
   --color-status-amber: var(--status-amber);
   --color-status-red: var(--status-red);
   --color-status-purple: var(--status-purple);
+
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-info: var(--info);
 
   --color-secondary-coral: var(--secondary-coral);
 }
@@ -257,7 +269,7 @@
   @apply my-3 text-sm leading-relaxed;
 }
 .prose a {
-  @apply text-primary underline underline-offset-2;
+  @apply text-link underline underline-offset-2 hover:text-link-hover;
 }
 .prose strong {
   @apply font-semibold text-foreground;

@@ -245,7 +245,7 @@ export default function AdminCheckInPage() {
       description={
         <>
           Ask for their name, email, or phone — then confirm waiver and tickets.{' '}
-          <Link href="/admin/tickets" className="font-medium text-brand hover:text-brand whitespace-nowrap">
+          <Link href="/admin/tickets" className="font-medium text-link underline underline-offset-4 hover:text-link-hover whitespace-nowrap">
             View ticket counts by event →
           </Link>
         </>
@@ -353,7 +353,7 @@ export default function AdminCheckInPage() {
                   case-insensitively.
                 </p>
                 <details className="group [&_summary::-webkit-details-marker]:hidden [&_summary]:list-none">
-                  <summary className="inline cursor-pointer text-sm font-medium text-brand underline underline-offset-2 hover:text-brand">
+                  <summary className="inline cursor-pointer text-sm font-medium text-link underline underline-offset-4 hover:text-link-hover">
                     Where to find the order number on the customer&apos;s email
                   </summary>
                   <figure className="mx-auto mt-3 w-full max-w-lg overflow-hidden rounded border border-border bg-card shadow-sm">

@@ -116,7 +116,7 @@ export default function AdminCustomersLeaderboardPage() {
           If totals look wrong, set env{' '}
           <code className="text-sm bg-muted px-1 rounded">CHECKIN_WEBFLOW_MONEY_MINOR_UNITS=0</code>. Ticket qty is
           the sum of all line quantities.{' '}
-          <Link href="/admin/tickets" className="font-medium text-brand hover:text-brand">
+          <Link href="/admin/tickets" className="font-medium text-link underline underline-offset-4 hover:text-link-hover">
             Event ticket counts →
           </Link>
         </>

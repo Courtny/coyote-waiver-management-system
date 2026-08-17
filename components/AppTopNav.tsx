@@ -3,8 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button } from '@coyote-force/ui';
-import { LogOut, Menu, X } from 'lucide-react';
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@coyote-force/ui';
+import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
 
 type NavItem = {
   href: string;
@@ -13,22 +19,25 @@ type NavItem = {
   isActive: (pathname: string) => boolean;
 };
 
-const items: NavItem[] = [
+const primaryItems: NavItem[] = [
   {
     href: '/admin/dashboard',
     label: 'Waivers',
     isActive: (p) => p.startsWith('/admin/dashboard') || p.startsWith('/admin/waivers'),
   },
   {
-    href: '/admin/checkin',
-    label: 'Check-In',
-    isActive: (p) => p.startsWith('/admin/checkin'),
-  },
-  {
     href: '/admin/tickets',
     label: 'Event Tickets',
     sublabel: 'Ticket Counts',
     isActive: (p) => p.startsWith('/admin/tickets'),
+  },
+];
+
+const moreItems: NavItem[] = [
+  {
+    href: '/admin/checkin',
+    label: 'Check-In',
+    isActive: (p) => p.startsWith('/admin/checkin'),
   },
   {
     href: '/admin/customers',
@@ -43,6 +52,8 @@ const items: NavItem[] = [
   },
 ];
 
+const items: NavItem[] = [...primaryItems, ...moreItems];
+
 function linkClass(active: boolean, opts?: { block?: boolean }) {
   const base = opts?.block
     ? 'block w-full rounded px-3 py-3 text-left text-sm font-medium transition-colors sm:py-2.5'
@@ -50,7 +61,7 @@ function linkClass(active: boolean, opts?: { block?: boolean }) {
   return [
     base,
     active
-      ? 'bg-primary/10 text-brand'
+      ? 'bg-primary/10 text-foreground'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
   ].join(' ');
 }
@@ -89,14 +100,14 @@ export default function AppTopNav() {
       >
         <Link
           href="/"
-          className="min-w-0 shrink truncate font-heading text-sm font-semibold text-foreground hover:text-brand sm:text-base"
+          className="min-w-0 shrink truncate font-heading text-sm font-semibold text-foreground hover:text-link-hover sm:text-base"
         >
           Coyote Waiver
         </Link>
 
         <div className="hidden min-w-0 flex-1 items-center justify-end gap-1 lg:flex lg:gap-2">
           <ul className="flex flex-wrap items-center justify-end gap-0.5 sm:gap-1 lg:gap-2">
-            {items.map(({ href, label, sublabel, isActive }) => {
+            {primaryItems.map(({ href, label, sublabel, isActive }) => {
               const active = isActive(pathname);
               return (
                 <li key={href}>
@@ -107,19 +118,38 @@ export default function AppTopNav() {
                         <span className="whitespace-nowrap font-normal text-muted-foreground"> ({sublabel})</span>
                       ) : null}
                     </span>
-                    <span className="xl:hidden">
-                      {href === '/admin/tickets'
-                        ? 'Tickets'
-                        : href === '/admin/users'
-                          ? 'Users'
-                          : href === '/admin/customers'
-                            ? 'Customers'
-                            : label}
-                    </span>
+                    <span className="xl:hidden">{href === '/admin/tickets' ? 'Tickets' : label}</span>
                   </Link>
                 </li>
               );
             })}
+            <li>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={`${linkClass(moreItems.some((item) => item.isActive(pathname)))} inline-flex items-center gap-1`}
+                >
+                  More
+                  <ChevronDown size={14} className="shrink-0 opacity-70" aria-hidden />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {moreItems.map(({ href, label, sublabel, isActive }) => {
+                    const active = isActive(pathname);
+                    return (
+                      <DropdownMenuItem key={href} asChild>
+                        <Link href={href} aria-current={active ? 'page' : undefined}>
+                          <span>
+                            {label}
+                            {sublabel ? (
+                              <span className="font-normal text-muted-foreground"> ({sublabel})</span>
+                            ) : null}
+                          </span>
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </li>
           </ul>
           <Button
             type="button"

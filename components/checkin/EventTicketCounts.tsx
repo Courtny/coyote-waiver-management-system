@@ -313,7 +313,7 @@ function EventDetailPanel({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-brand hover:text-brand text-sm font-medium"
+        className="inline-flex items-center gap-2 text-sm font-medium text-link underline underline-offset-4 hover:text-link-hover"
       >
         <ArrowLeft size={16} />
         Back to event list
@@ -818,7 +818,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-foreground text-lg pr-2">{ev.title}</h3>
                     <ChevronRight
-                      className="text-muted-foreground group-hover:text-brand shrink-0 mt-1"
+                      className="text-muted-foreground group-hover:text-link shrink-0 mt-1"
                       size={20}
                       aria-hidden
                     />

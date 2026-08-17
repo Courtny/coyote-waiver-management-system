@@ -59,7 +59,7 @@ export default function AdminTicketsPage() {
       description={
         <>
           Totals from cached Webflow orders, by product and SKU.{' '}
-          <Link href="/admin/checkin" className="font-medium text-brand hover:text-brand">
+          <Link href="/admin/checkin" className="font-medium text-link underline underline-offset-4 hover:text-link-hover">
             Player check-in →
           </Link>
         </>
