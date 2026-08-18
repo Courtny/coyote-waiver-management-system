@@ -10,6 +10,8 @@ const ET = 'America/New_York';
 
 export type DailyRegistrationCount = {
   date: string;
+  currentYear: number;
+  priorYears: number;
   count: number;
 };
 
@@ -32,13 +34,20 @@ export function buildEtDateSeries(days: number, now: Date = new Date()): string[
 
 export function zeroFillDailyCounts(
   dates: string[],
-  rows: { date: string; count: number }[]
+  rows: { date: string; currentYear: number; priorYears: number }[]
 ): DailyRegistrationCount[] {
-  const byDate = new Map(rows.map((row) => [row.date, row.count]));
-  return dates.map((date) => ({
-    date,
-    count: byDate.get(date) ?? 0,
-  }));
+  const byDate = new Map(rows.map((row) => [row.date, row]));
+  return dates.map((date) => {
+    const row = byDate.get(date);
+    const currentYear = row?.currentYear ?? 0;
+    const priorYears = row?.priorYears ?? 0;
+    return {
+      date,
+      currentYear,
+      priorYears,
+      count: currentYear + priorYears,
+    };
+  });
 }
 
 export function deriveRegistrationKpis(daily: DailyRegistrationCount[]): {
@@ -61,15 +70,16 @@ export async function getWaiverRegistrationStats(
   const currentYear = formatInTimeZone(now, ET, 'yyyy');
 
   const [dailyResult, latestResult] = await Promise.all([
-    pool.query<{ date: string; count: number }>(
+    pool.query<{ date: string; currentYear: number; priorYears: number }>(
       `SELECT
         to_char((signaturedate::timestamptz AT TIME ZONE 'America/New_York'), 'YYYY-MM-DD') AS date,
-        COUNT(*)::int AS count
+        COUNT(*) FILTER (WHERE waiveryear = $2)::int AS "currentYear",
+        COUNT(*) FILTER (WHERE waiveryear <> $2)::int AS "priorYears"
       FROM waivers
       WHERE (signaturedate::timestamptz AT TIME ZONE 'America/New_York')::date >= $1::date
       GROUP BY date
       ORDER BY date`,
-      [startDate]
+      [startDate, Number(currentYear)]
     ),
     pool.query(
       `SELECT
@@ -96,7 +106,8 @@ export async function getWaiverRegistrationStats(
     dates,
     dailyResult.rows.map((row) => ({
       date: row.date,
-      count: Number(row.count),
+      currentYear: Number(row.currentYear),
+      priorYears: Number(row.priorYears),
     }))
   );
   const kpis = deriveRegistrationKpis(daily);
