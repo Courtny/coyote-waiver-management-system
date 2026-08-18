@@ -19,6 +19,24 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 - Webflow Data API v2 (ecommerce orders) via server-side fetch
 - Lucide React (icons), date-fns
 - @vercel/analytics
+- `@courtny/coyote-force-ui` (GitHub Packages; imported as `@coyote-force/ui`)
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- A GitHub PAT with `read:packages` for `@courtny/coyote-force-ui` (set as `NPM_TOKEN`)
+
+### GitHub Packages auth
+
+Copy [`.npmrc.example`](./.npmrc.example) to `.npmrc` (already in the repo) and export a token:
+
+```bash
+export NPM_TOKEN=ghp_your_token_with_read_packages
+```
+
+On Vercel, add `NPM_TOKEN` (or `GITHUB_TOKEN` if you change `.npmrc` to match) as a project environment variable so installs can read GitHub Packages.
 
 ## Getting Started
 

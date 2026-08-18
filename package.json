@@ -12,7 +12,7 @@
     "test": "node --import tsx --test lib/__tests__/checkin-config.test.ts lib/__tests__/ticket-checkin.test.ts lib/__tests__/checkin-attendance.test.ts lib/__tests__/waiver-registration-stats.test.ts"
   },
   "dependencies": {
-    "@coyote-force/ui": "file:./vendor/coyote-force-ui",
+    "@coyote-force/ui": "npm:@courtny/coyote-force-ui@^1.0.0",
     "@tailwindcss/postcss": "^4.2.2",
     "@vercel/analytics": "^2.0.1",
     "bcryptjs": "^2.4.3",
