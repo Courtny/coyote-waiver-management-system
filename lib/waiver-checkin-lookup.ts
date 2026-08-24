@@ -34,6 +34,9 @@ export function normalizePhoneDigits(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
+/** Field/play waivers only — camping must not unlock check-in. */
+const FIELD_WAIVER_FILTER = `(waivertype IS NULL OR waivertype = 'field')`;
+
 export async function findWaiversByEmail(email: string): Promise<WaiverRow[]> {
   const e = normalizeEmail(email);
   if (!e) return [];
@@ -48,6 +51,7 @@ export async function findWaiversByEmail(email: string): Promise<WaiverRow[]> {
       waiveryear as "waiverYear"
     FROM waivers
     WHERE LOWER(TRIM(email)) = $1
+      AND ${FIELD_WAIVER_FILTER}
     ORDER BY waiveryear DESC, signaturedate DESC`,
     [e]
   );
@@ -68,6 +72,7 @@ export async function findWaiversByPhone(phone: string): Promise<WaiverRow[]> {
       waiveryear as "waiverYear"
     FROM waivers
     WHERE REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '', 'g') = $1
+      AND ${FIELD_WAIVER_FILTER}
     ORDER BY waiveryear DESC, signaturedate DESC`,
     [digits]
   );
@@ -98,10 +103,12 @@ export async function findWaiversByNameFuzzy(fullName: string, limit = 8): Promi
       ) as relevance
     FROM waivers
     WHERE 
-      similarity(firstname, $1) > 0.25 OR
-      similarity(lastname, $1) > 0.25 OR
-      similarity(firstname || ' ' || lastname, $1) > 0.25 OR
-      (firstname || ' ' || lastname) ILIKE $2
+      (${FIELD_WAIVER_FILTER}) AND (
+        similarity(firstname, $1) > 0.25 OR
+        similarity(lastname, $1) > 0.25 OR
+        similarity(firstname || ' ' || lastname, $1) > 0.25 OR
+        (firstname || ' ' || lastname) ILIKE $2
+      )
     ORDER BY relevance DESC, waiveryear DESC, signaturedate DESC
     LIMIT $3`,
     [q, searchTerm, limit]

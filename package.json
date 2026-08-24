@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3020",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3020",
     "lint": "next lint",
     "create-admin": "tsx scripts/create-admin.ts",
     "validate:config": "tsx scripts/validate-checkin-events.ts",

@@ -104,6 +104,24 @@ export async function initDatabase() {
       )
     `);
 
+    // Camping waiver columns (existing CREATE IF NOT EXISTS will not alter live schema)
+    await pool.query(`
+      ALTER TABLE waivers
+      ADD COLUMN IF NOT EXISTS waivertype TEXT NOT NULL DEFAULT 'field'
+    `);
+    await pool.query(`
+      ALTER TABLE waivers
+      ADD COLUMN IF NOT EXISTS emergencycontactname TEXT
+    `);
+    await pool.query(`
+      ALTER TABLE waivers
+      ADD COLUMN IF NOT EXISTS guardianname TEXT
+    `);
+    await pool.query(`
+      ALTER TABLE waivers
+      ADD COLUMN IF NOT EXISTS guardiansignature TEXT
+    `);
+
     // Create indexes for faster searches
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_waiver_name ON waivers(lastName, firstName)
@@ -113,6 +131,9 @@ export async function initDatabase() {
     `);
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_waiver_minors ON waivers(minorNames)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_waiver_type ON waivers(waivertype)
     `);
   } catch (error: any) {
     // If tables/indexes already exist, that's fine - ignore those errors

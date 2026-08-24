@@ -1,37 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
-import { Waiver } from '@/lib/types';
+import { Waiver, WaiverType } from '@/lib/types';
+
+function isUnder18(yearOfBirth: string): boolean {
+  const yob = Number(yearOfBirth);
+  if (!Number.isFinite(yob) || yob < 1900) return false;
+  return new Date().getFullYear() - yob < 18;
+}
+
+function normalizeWaiverType(value: unknown): WaiverType {
+  return value === 'camping' ? 'camping' : 'field';
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body: Waiver = await request.json();
     const currentYear = new Date().getFullYear();
+    const waiverType = normalizeWaiverType(body.waiverType);
 
-    // Validate required fields
-    if (!body.firstName || !body.lastName || !body.email || !body.yearOfBirth || 
-        !body.emergencyContactPhone || !body.safetyRulesInitial || 
-        !body.medicalConsentInitial || !body.signature) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    if (waiverType === 'camping') {
+      if (
+        !body.firstName ||
+        !body.lastName ||
+        !body.email ||
+        !body.yearOfBirth ||
+        !body.phone ||
+        !body.emergencyContactName ||
+        !body.emergencyContactPhone ||
+        !body.signature
+      ) {
+        return NextResponse.json(
+          { error: 'Missing required fields' },
+          { status: 400 }
+        );
+      }
+      if (isUnder18(body.yearOfBirth)) {
+        if (!body.guardianName?.trim() || !body.guardianSignature) {
+          return NextResponse.json(
+            { error: 'Parent/guardian name and signature are required for minors' },
+            { status: 400 }
+          );
+        }
+      }
+    } else {
+      if (
+        !body.firstName ||
+        !body.lastName ||
+        !body.email ||
+        !body.yearOfBirth ||
+        !body.emergencyContactPhone ||
+        !body.safetyRulesInitial ||
+        !body.medicalConsentInitial ||
+        !body.signature
+      ) {
+        return NextResponse.json(
+          { error: 'Missing required fields' },
+          { status: 400 }
+        );
+      }
     }
 
-    // Get IP address and user agent
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const ipAddress =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
-
     const signatureDate = new Date().toISOString();
+
+    const safetyRulesInitial =
+      waiverType === 'camping' ? '' : body.safetyRulesInitial;
+    const medicalConsentInitial =
+      waiverType === 'camping' ? '' : body.medicalConsentInitial;
+    const photoRelease = waiverType === 'camping' ? false : body.photoRelease || false;
+    const minorNames = waiverType === 'camping' ? null : body.minorNames || null;
+    const emergencyContactName =
+      waiverType === 'camping' ? body.emergencyContactName || null : null;
+    const guardianName =
+      waiverType === 'camping' && isUnder18(body.yearOfBirth)
+        ? body.guardianName || null
+        : null;
+    const guardianSignature =
+      waiverType === 'camping' && isUnder18(body.yearOfBirth)
+        ? body.guardianSignature || null
+        : null;
 
     const result = await pool.query(
       `INSERT INTO waivers (
         firstname, lastname, email, yearofbirth, phone,
         emergencycontactphone, safetyrulesinitial, medicalconsentinitial,
-        photorelease, minornames, signature, signaturedate, 
-        ipaddress, useragent, waiveryear
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        photorelease, minornames, signature, signaturedate,
+        ipaddress, useragent, waiveryear, waivertype,
+        emergencycontactname, guardianname, guardiansignature
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING id`,
       [
         body.firstName,
@@ -40,15 +100,19 @@ export async function POST(request: NextRequest) {
         body.yearOfBirth,
         body.phone || null,
         body.emergencyContactPhone,
-        body.safetyRulesInitial,
-        body.medicalConsentInitial,
-        body.photoRelease || false,
-        body.minorNames || null,
+        safetyRulesInitial,
+        medicalConsentInitial,
+        photoRelease,
+        minorNames,
         body.signature,
         signatureDate,
         ipAddress,
         userAgent,
-        currentYear
+        currentYear,
+        waiverType,
+        emergencyContactName,
+        guardianName,
+        guardianSignature,
       ]
     );
 
@@ -61,7 +125,8 @@ export async function POST(request: NextRequest) {
 
     if (webhookUrl && baseUrl && newId != null) {
       const waiverUrl = `${baseUrl}/admin/waivers/${newId}`;
-      const message = `New waiver from **${body.firstName} ${body.lastName}**. [See it here](${waiverUrl})`;
+      const typeLabel = waiverType === 'camping' ? 'camping waiver' : 'waiver';
+      const message = `New ${typeLabel} from **${body.firstName} ${body.lastName}**. [See it here](${waiverUrl})`;
       try {
         const r = await fetch(webhookUrl, {
           method: 'POST',
@@ -74,9 +139,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: 'Waiver submitted successfully' 
+      message: 'Waiver submitted successfully',
     });
   } catch (error) {
     console.error('Error submitting waiver:', error);

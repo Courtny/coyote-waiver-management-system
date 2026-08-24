@@ -42,6 +42,7 @@ export async function GET(
         yearofbirth as "yearOfBirth",
         phone,
         emergencycontactphone as "emergencyContactPhone",
+        emergencycontactname as "emergencyContactName",
         safetyrulesinitial as "safetyRulesInitial",
         medicalconsentinitial as "medicalConsentInitial",
         photorelease as "photoRelease",
@@ -49,6 +50,9 @@ export async function GET(
         signature,
         signaturedate as "signatureDate",
         waiveryear as "waiverYear",
+        COALESCE(waivertype, 'field') as "waiverType",
+        guardianname as "guardianName",
+        guardiansignature as "guardianSignature",
         createdat as "createdAt",
         ipaddress as "ipAddress",
         useragent as "userAgent"

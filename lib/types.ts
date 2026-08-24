@@ -1,3 +1,5 @@
+export type WaiverType = 'field' | 'camping';
+
 export interface Waiver {
   id?: number;
   firstName: string;
@@ -6,6 +8,7 @@ export interface Waiver {
   yearOfBirth: string;
   phone?: string;
   emergencyContactPhone: string;
+  emergencyContactName?: string;
   safetyRulesInitial: string;
   medicalConsentInitial: string;
   photoRelease: boolean;
@@ -16,6 +19,9 @@ export interface Waiver {
   userAgent?: string;
   createdAt?: string;
   waiverYear: number;
+  waiverType?: WaiverType;
+  guardianName?: string;
+  guardianSignature?: string;
 }
 
 export interface WaiverSearchResult {
@@ -28,4 +34,5 @@ export interface WaiverSearchResult {
   waiverYear: number;
   hasCurrentYearWaiver: boolean;
   minorNames?: string;
+  waiverType?: WaiverType;
 }

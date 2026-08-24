@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
         signaturedate as "signatureDate",
         waiveryear as "waiverYear",
         minornames as "minorNames",
+        COALESCE(waivertype, 'field') as "waiverType",
         CASE 
           WHEN waiveryear = $1 THEN 1 
           ELSE 0 

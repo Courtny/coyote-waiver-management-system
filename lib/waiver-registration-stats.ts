@@ -77,6 +77,7 @@ export async function getWaiverRegistrationStats(
         COUNT(*) FILTER (WHERE waiveryear <> $2)::int AS "priorYears"
       FROM waivers
       WHERE (signaturedate::timestamptz AT TIME ZONE 'America/New_York')::date >= $1::date
+        AND (waivertype IS NULL OR waivertype = 'field')
       GROUP BY date
       ORDER BY date`,
       [startDate, Number(currentYear)]
@@ -91,11 +92,13 @@ export async function getWaiverRegistrationStats(
         signaturedate AS "signatureDate",
         waiveryear AS "waiverYear",
         minornames AS "minorNames",
+        COALESCE(waivertype, 'field') AS "waiverType",
         CASE
           WHEN waiveryear = $1 THEN 1
           ELSE 0
         END AS "hasCurrentYearWaiver"
       FROM waivers
+      WHERE (waivertype IS NULL OR waivertype = 'field')
       ORDER BY signaturedate DESC
       LIMIT $2`,
       [Number(currentYear), LATEST_WAIVERS_LIMIT]

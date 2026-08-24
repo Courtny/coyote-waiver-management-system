@@ -3,13 +3,30 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { WaiverSearchResult } from '@/lib/types';
+import { WaiverSearchResult, WaiverType } from '@/lib/types';
 import { Search, CheckCircle, XCircle, Loader2, Download } from 'lucide-react';
 import { Button } from '@coyote-force/ui';
 import { highlightMatch } from '@/lib/typeahead-utils';
 import AdminPageShell from '@/components/admin/AdminPageShell';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
 import WaiverRegistrationOverview from '@/components/admin/WaiverRegistrationOverview';
+
+type TypeFilter = 'all' | WaiverType;
+
+function WaiverTypeBadge({ type }: { type?: WaiverType }) {
+  const isCamping = type === 'camping';
+  return (
+    <span
+      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold ${
+        isCamping
+          ? 'bg-khaki/30 text-foreground'
+          : 'bg-muted text-muted-foreground'
+      }`}
+    >
+      {isCamping ? 'Camping' : 'Field'}
+    </span>
+  );
+}
 
 interface TypeaheadOption {
   id: number;
@@ -25,6 +42,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [allWaivers, setAllWaivers] = useState<WaiverSearchResult[]>([]);
   const [searchResults, setSearchResults] = useState<WaiverSearchResult[]>([]);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [error, setError] = useState('');
@@ -202,6 +220,15 @@ export default function AdminDashboard() {
 
   const currentYear = new Date().getFullYear();
 
+  const matchesTypeFilter = (result: WaiverSearchResult) => {
+    if (typeFilter === 'all') return true;
+    const t = result.waiverType || 'field';
+    return t === typeFilter;
+  };
+
+  const filteredSearchResults = searchResults.filter(matchesTypeFilter);
+  const filteredAllWaivers = allWaivers.filter(matchesTypeFilter);
+
   return (
     <AdminPageShell
       title="Admin Dashboard"
@@ -229,6 +256,27 @@ export default function AdminDashboard() {
       }
     >
         <WaiverRegistrationOverview />
+
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Type:</span>
+          {(
+            [
+              { id: 'all', label: 'All' },
+              { id: 'field', label: 'Field' },
+              { id: 'camping', label: 'Camping' },
+            ] as const
+          ).map((opt) => (
+            <Button
+              key={opt.id}
+              type="button"
+              size="sm"
+              variant={typeFilter === opt.id ? 'primary' : 'secondary'}
+              onClick={() => setTypeFilter(opt.id)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
 
         <div className="rounded border border-border bg-card p-6 mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
@@ -398,20 +446,21 @@ export default function AdminDashboard() {
         {isSearchMode && isLoading && (
           <div className="rounded border border-border bg-card p-6">
             <h2 className="text-2xl font-semibold text-foreground mb-6">Search Results</h2>
-            <TableSkeleton columns={7} rows={8} ariaLabel="Loading search results" />
+            <TableSkeleton columns={8} rows={8} ariaLabel="Loading search results" />
           </div>
         )}
 
-        {isSearchMode && !isLoading && searchResults.length > 0 && (
+        {isSearchMode && !isLoading && filteredSearchResults.length > 0 && (
           <div className="rounded border border-border bg-card p-6">
             <h2 className="text-2xl font-semibold text-foreground mb-6">
-              Search Results ({searchResults.length})
+              Search Results ({filteredSearchResults.length})
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b-2 border-border">
                     <th className="px-4 py-3 text-left text-foreground font-semibold">Name</th>
+                    <th className="px-4 py-3 text-left text-foreground font-semibold">Type</th>
                     <th className="px-4 py-3 text-left text-foreground font-semibold">Email</th>
                     <th className="px-4 py-3 text-left text-foreground font-semibold">Year of Birth</th>
                     <th className="px-4 py-3 text-left text-foreground font-semibold">Minors</th>
@@ -421,7 +470,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {searchResults.map((result) => (
+                  {filteredSearchResults.map((result) => (
                     <tr key={result.id} className="border-b border-border hover:bg-muted transition-colors">
                       <td className="px-4 py-3 font-medium">
                         <Link 
@@ -430,6 +479,9 @@ export default function AdminDashboard() {
                         >
                           {result.firstName} {result.lastName}
                         </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <WaiverTypeBadge type={result.waiverType} />
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {result.email}
@@ -481,10 +533,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {isSearchMode && searchQuery && searchResults.length === 0 && !isLoading && (
+        {isSearchMode && searchQuery && filteredSearchResults.length === 0 && !isLoading && (
           <div className="rounded border border-border bg-card p-6">
             <p className="text-center text-muted-foreground">
               No waivers found for &quot;{searchQuery}&quot;
+              {typeFilter !== 'all' ? ` (${typeFilter})` : ''}
             </p>
           </div>
         )}
@@ -493,12 +546,12 @@ export default function AdminDashboard() {
           <div className="rounded border border-border bg-card p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-foreground">
-                All Waiver Submissions ({allWaivers.length})
+                All Waiver Submissions ({filteredAllWaivers.length})
               </h2>
             </div>
             {isLoadingAll ? (
-              <TableSkeleton columns={7} rows={10} ariaLabel="Loading waivers" />
-            ) : allWaivers.length === 0 ? (
+              <TableSkeleton columns={8} rows={10} ariaLabel="Loading waivers" />
+            ) : filteredAllWaivers.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No waivers submitted yet.</p>
               </div>
@@ -508,6 +561,7 @@ export default function AdminDashboard() {
                   <thead>
                     <tr className="border-b-2 border-border">
                       <th className="px-4 py-3 text-left text-foreground font-semibold">Name</th>
+                      <th className="px-4 py-3 text-left text-foreground font-semibold">Type</th>
                       <th className="px-4 py-3 text-left text-foreground font-semibold">Email</th>
                       <th className="px-4 py-3 text-left text-foreground font-semibold">Year of Birth</th>
                       <th className="px-4 py-3 text-left text-foreground font-semibold">Minors</th>
@@ -517,7 +571,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {allWaivers.map((result) => (
+                    {filteredAllWaivers.map((result) => (
                       <tr key={result.id} className="border-b border-border hover:bg-muted transition-colors">
                         <td className="px-4 py-3 font-medium">
                           <Link 
@@ -526,6 +580,9 @@ export default function AdminDashboard() {
                           >
                             {result.firstName} {result.lastName}
                           </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          <WaiverTypeBadge type={result.waiverType} />
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {result.email}

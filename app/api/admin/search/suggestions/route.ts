@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         signaturedate as "signatureDate",
         waiveryear as "waiverYear",
         minornames as "minorNames",
+        COALESCE(waivertype, 'field') as "waiverType",
         CASE 
           WHEN waiveryear = $1 THEN 1 
           ELSE 0 
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
           COALESCE(similarity(lastname, $2), 0),
           COALESCE(similarity(firstname || ' ' || lastname, $2), 0),
           COALESCE(similarity(COALESCE(minornames, ''), $2), 0),
+          COALESCE(similarity(COALESCE(guardianname, ''), $2), 0),
           CASE WHEN yearofbirth ILIKE $3 THEN 1.0 ELSE 0 END
         ) as relevance
       FROM waivers
@@ -60,7 +62,8 @@ export async function GET(request: NextRequest) {
         (similarity(lastname, $2) > 0.3 OR lastname ILIKE $3) OR
         (similarity(firstname || ' ' || lastname, $2) > 0.3 OR (firstname || ' ' || lastname) ILIKE $3) OR
         (yearofbirth ILIKE $3) OR
-        (minornames IS NOT NULL AND (similarity(minornames, $2) > 0.3 OR minornames ILIKE $3))
+        (minornames IS NOT NULL AND (similarity(minornames, $2) > 0.3 OR minornames ILIKE $3)) OR
+        (guardianname IS NOT NULL AND (similarity(guardianname, $2) > 0.3 OR guardianname ILIKE $3))
       ORDER BY 
         relevance DESC,
         waiveryear DESC, 

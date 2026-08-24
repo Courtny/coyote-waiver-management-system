@@ -82,7 +82,7 @@ npm run create-admin <username> <password>
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3020](http://localhost:3020)
 
 For a short local setup walkthrough (JWT, `DATABASE_URL`, admin user), see **[SETUP.md](./SETUP.md)**.
 

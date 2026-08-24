@@ -28,7 +28,7 @@ const defaultDescription =
 const ogImageUrl = baseUrl ? `${baseUrl}/og.png` : '/og.png'
 
 export const metadata: Metadata = {
-  metadataBase: baseUrl ? new URL(baseUrl) : new URL('http://localhost:3000'),
+  metadataBase: baseUrl ? new URL(baseUrl) : new URL('http://localhost:3020'),
   title: defaultTitle,
   description: defaultDescription,
   openGraph: {

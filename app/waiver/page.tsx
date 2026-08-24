@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Card, CardContent, Checkbox, Input, Label } from '@coyote-force/ui';
+import SignaturePad from '@/components/SignaturePad';
 
 export default function WaiverPage() {
   const router = useRouter();
@@ -23,127 +24,12 @@ export default function WaiverPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    });
-  };
-
-  // Initialize canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = 800;
-    const height = 200;
-    const dpr = window.devicePixelRatio || 1;
-    
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    
-    ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-  }, []);
-
-  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const scaleX = (canvas.width / dpr) / rect.width;
-    const scaleY = (canvas.height / dpr) / rect.height;
-
-    if ('touches' in e) {
-      const touch = e.touches[0] || e.changedTouches[0];
-      return {
-        x: (touch.clientX - rect.left) * scaleX,
-        y: (touch.clientY - rect.top) * scaleY,
-      };
-    } else {
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
-      };
-    }
-  };
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const coords = getCoordinates(e);
-    if (!coords) return;
-
-    setIsDrawing(true);
-    ctx.beginPath();
-    ctx.moveTo(coords.x, coords.y);
-    ctx.lineTo(coords.x, coords.y);
-    ctx.stroke();
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const coords = getCoordinates(e);
-    if (!coords) return;
-
-    ctx.lineTo(coords.x, coords.y);
-    ctx.stroke();
-  };
-
-  const stopDrawing = () => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
-    saveSignature();
-  };
-
-  const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const dataURL = canvas.toDataURL('image/png');
-    setFormData({
-      ...formData,
-      signature: dataURL,
-    });
-  };
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setFormData({
-      ...formData,
-      signature: '',
     });
   };
 
@@ -160,6 +46,7 @@ export default function WaiverPage() {
         },
         body: JSON.stringify({
           ...formData,
+          waiverType: 'field',
           signatureDate: new Date().toISOString(),
         }),
       });
@@ -471,44 +358,12 @@ export default function WaiverPage() {
               <h3 className="text-xl font-semibold text-foreground">
                 SIGNATURE *
               </h3>
-              <div className="space-y-2">
-                <Label htmlFor="signature">Sign here</Label>
-                <div className="relative mb-2 rounded border-2 border-input bg-card">
-                  <canvas
-                    ref={canvasRef}
-                    id="signature"
-                    className="block h-[200px] w-full max-w-full cursor-crosshair touch-none border-0"
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
-                  />
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="destructive-solid"
-                    size="sm"
-                    onClick={clearSignature}
-                  >
-                    Clear Signature
-                  </Button>
-                  {formData.signature && (
-                    <span className="flex items-center text-sm text-status-green">
-                      ✓ Signature captured
-                    </span>
-                  )}
-                </div>
-                <input
-                  type="hidden"
-                  name="signature"
-                  value={formData.signature}
-                  required={!formData.signature}
-                />
-              </div>
+              <SignaturePad
+                id="signature"
+                value={formData.signature}
+                onChange={(signature) => setFormData((prev) => ({ ...prev, signature }))}
+                required
+              />
               <div className="space-y-2 rounded bg-muted p-4 text-sm leading-relaxed text-muted-foreground">
                 <p>
                   By hitting accept, you are consenting to the use of your electronic signature in lieu of an original signature on paper.

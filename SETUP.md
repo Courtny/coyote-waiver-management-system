@@ -39,9 +39,9 @@ Replace `admin` with your desired username and `yourpassword123` with your desir
 npm run dev
 ```
 
-The server will start on http://localhost:3000
+The server will start on http://localhost:3020
 
 ## Step 4: Test the Application
 
-1. Navigate to http://localhost:3000/waiver to test the waiver form
-2. Navigate to http://localhost:3000/admin/login to test the admin dashboard
+1. Navigate to http://localhost:3020/waiver to test the waiver form
+2. Navigate to http://localhost:3020/admin/login to test the admin dashboard
