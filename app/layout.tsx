@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter_Tight, Fragment_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { BuildMetaFooter } from '@/components/BuildMetaFooter'
 import './globals.css'
 
 const interTight = Inter_Tight({
@@ -57,6 +58,7 @@ export default function RootLayout({
     <html lang="en" className={`light ${interTight.variable} ${fragmentMono.variable}`}>
       <body className="bg-background font-sans text-foreground antialiased">
         {children}
+        <BuildMetaFooter />
         <Analytics />
       </body>
     </html>
