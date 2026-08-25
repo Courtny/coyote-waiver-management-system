@@ -6,6 +6,7 @@ import {
   PAINTBALL_OPEN_PLAY_PRODUCT_ID,
   buildAttendanceSummaries,
   compareAttendanceSummaries,
+  isPreferredEventCoverDisplayName,
   flagEventPatchRecipients,
   isFtxOrStxEventTitle,
   openPlayPinRank,
@@ -146,6 +147,97 @@ describe('buildAttendanceSummaries sort order', () => {
       summaries.map((s) => s.productId),
       [airsoftAlt, paintballAlt, other]
     );
+  });
+});
+
+describe('isPreferredEventCoverDisplayName', () => {
+  it('matches Mercenary Admission Only and rejects rental or other factions', () => {
+    assert.equal(
+      isPreferredEventCoverDisplayName(
+        'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Mercenary [Place As Needed], ADMISSION TYPE: Admission Only'
+      ),
+      true
+    );
+    assert.equal(
+      isPreferredEventCoverDisplayName(
+        'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Mercenary [Place As Needed], ADMISSION TYPE: Admission + Rental Kit'
+      ),
+      false
+    );
+    assert.equal(
+      isPreferredEventCoverDisplayName(
+        'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Coyote Syndicate, ADMISSION TYPE: Admission Only'
+      ),
+      false
+    );
+  });
+});
+
+describe('buildAttendanceSummaries event cover image', () => {
+  const ironRidgeId = '6a6d1303a00f68943bbb423b';
+  const mercenaryCover =
+    'https://cdn.example.com/FTX-Iron-Ridge-Mercenary.jpeg';
+  const syndicateCover =
+    'https://cdn.example.com/FTX-Iron-Ridge-Coyote-Syndicate.jpeg';
+
+  function ironRidgeOrder(
+    orderId: string,
+    displayName: string,
+    imageUrl: string,
+    sku: string
+  ): NormalizedOrder {
+    return {
+      orderId,
+      acceptedOn: '2026-08-01T12:00:00Z',
+      customerEmail: 'test@example.com',
+      customerFullName: 'Test User',
+      billingAddressee: 'Test User',
+      customerPaidAmount: 30,
+      lines: [
+        {
+          productId: ironRidgeId,
+          productName: 'Airsoft FTX: Iron Ridge',
+          variantId: `var-${sku}`,
+          sku,
+          displayName,
+          quantity: 1,
+          imageUrl,
+        },
+      ],
+    };
+  }
+
+  it('uses Mercenary Admission Only cover even when another faction SKU is seen first', () => {
+    const orders = [
+      ironRidgeOrder(
+        'ord-syn',
+        'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Coyote Syndicate, ADMISSION TYPE: Admission Only',
+        syndicateCover,
+        'syndicate-admission'
+      ),
+      ironRidgeOrder(
+        'ord-merc',
+        'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Mercenary [Place As Needed], ADMISSION TYPE: Admission Only',
+        mercenaryCover,
+        'mercenary-admission'
+      ),
+    ];
+    const summaries = buildAttendanceSummaries(orders, [], {});
+    assert.equal(summaries.length, 1);
+    assert.equal(summaries[0].imageUrl, mercenaryCover);
+  });
+
+  it('falls back to the first variant image when no preferred cover SKU is present', () => {
+    const orders = [
+      ironRidgeOrder(
+        'ord-syn',
+        'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Coyote Syndicate, ADMISSION TYPE: Admission Only',
+        syndicateCover,
+        'syndicate-admission'
+      ),
+    ];
+    const summaries = buildAttendanceSummaries(orders, [], {});
+    assert.equal(summaries[0].imageUrl, syndicateCover);
   });
 });
 

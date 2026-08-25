@@ -9,7 +9,7 @@
     "lint": "next lint",
     "create-admin": "tsx scripts/create-admin.ts",
     "validate:config": "tsx scripts/validate-checkin-events.ts",
-    "test": "node --import tsx --test lib/__tests__/checkin-config.test.ts lib/__tests__/ticket-checkin.test.ts lib/__tests__/checkin-attendance.test.ts lib/__tests__/waiver-registration-stats.test.ts"
+    "test": "node --import tsx --test lib/__tests__/checkin-config.test.ts lib/__tests__/ticket-checkin.test.ts lib/__tests__/checkin-attendance.test.ts lib/__tests__/waiver-registration-stats.test.ts lib/__tests__/checkin-cache-summary.test.ts"
   },
   "dependencies": {
     "@coyote-force/ui": "npm:@courtny/coyote-force-ui@^1.0.0",

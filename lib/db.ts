@@ -104,6 +104,43 @@ export async function initDatabase() {
       )
     `);
 
+    // Durable Webflow orders cache (survives serverless cold starts)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS webflow_orders_cache (
+        "orderId" TEXT PRIMARY KEY,
+        payload JSONB NOT NULL,
+        "acceptedOn" TEXT,
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_webflow_orders_cache_accepted
+        ON webflow_orders_cache("acceptedOn")
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS webflow_orders_sync_meta (
+        id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+        "lastSyncAt" TIMESTAMP,
+        "lastKnownTotal" INTEGER NOT NULL DEFAULT 0,
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      INSERT INTO webflow_orders_sync_meta (id, "lastKnownTotal")
+      VALUES (1, 0)
+      ON CONFLICT (id) DO NOTHING
+    `);
+
+    // Frozen Past event ticket summaries (not re-aggregated on every list load)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS event_ticket_summary_cache (
+        "productId" TEXT PRIMARY KEY,
+        summary JSONB NOT NULL,
+        "frozenAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Camping waiver columns (existing CREATE IF NOT EXISTS will not alter live schema)
     await pool.query(`
       ALTER TABLE waivers

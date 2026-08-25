@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { applyActiveFlags, buildAttendanceSummaries, splitAttendanceSummaries } from '@/lib/checkin-attendance';
+import { buildCachedAttendanceSummary } from '@/lib/attendance-summary-cached';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
@@ -13,13 +13,15 @@ export async function GET(request: NextRequest) {
   const { events, skuDisplay } = getCheckinConfig();
 
   try {
-    const { orders, stale, error } = await getCachedWebflowOrders();
+    const { orders, stale, error, newlyOrderedProductIds } = await getCachedWebflowOrders();
     const flags = await getEventActiveFlags();
-    const eventSummaries = applyActiveFlags(
-      buildAttendanceSummaries(orders, events, skuDisplay),
-      flags
-    );
-    const { active, past } = splitAttendanceSummaries(eventSummaries);
+    const { active, past, events: eventSummaries } = await buildCachedAttendanceSummary({
+      orders,
+      events,
+      skuDisplay,
+      flags,
+      newlyOrderedProductIds,
+    });
 
     return NextResponse.json({
       active,

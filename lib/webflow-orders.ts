@@ -246,49 +246,75 @@ export class WebflowOrdersError extends Error {
   }
 }
 
-export async function fetchAllWebflowOrders(): Promise<NormalizedOrder[]> {
+export type WebflowOrdersPage = {
+  /** Normalized orders with at least one line item. */
+  orders: NormalizedOrder[];
+  /** Raw batch size from the API (before empty-line filtering). */
+  rawCount: number;
+  /** pagination.total from Webflow when present. */
+  total: number;
+};
+
+/** Fetch a single page of Webflow site orders. */
+export async function fetchWebflowOrdersPage(
+  offset: number,
+  limit = 100
+): Promise<WebflowOrdersPage> {
   const { webflowToken, webflowSiteId } = getCheckinConfig();
   if (!webflowToken || !webflowSiteId) {
     throw new WebflowOrdersError('Webflow is not configured (WEBFLOW_API_TOKEN / WEBFLOW_SITE_ID)', 503);
   }
 
+  const url = `${WEBFLOW_API}/sites/${encodeURIComponent(webflowSiteId)}/orders?limit=${limit}&offset=${offset}`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${webflowToken}`,
+      Accept: 'application/json',
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new WebflowOrdersError('Webflow API rejected the token (check ecommerce:read scope)', res.status);
+  }
+  if (res.status === 429) {
+    throw new WebflowOrdersError('Webflow API rate limited; try again shortly', 429);
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new WebflowOrdersError(`Webflow orders request failed (${res.status}): ${text.slice(0, 200)}`, res.status);
+  }
+
+  const body = (await res.json()) as ListOrdersResponse;
+  const batch = Array.isArray(body.orders)
+    ? body.orders
+    : Array.isArray(body.items)
+      ? body.items
+      : [];
+  const orders: NormalizedOrder[] = [];
+  for (const row of batch) {
+    const n = normalizeWebflowOrder(row);
+    if (n && n.lines.length > 0) orders.push(n);
+  }
+
+  const total =
+    typeof body.pagination?.total === 'number' && Number.isFinite(body.pagination.total)
+      ? body.pagination.total
+      : offset + batch.length;
+
+  return { orders, rawCount: batch.length, total };
+}
+
+export async function fetchAllWebflowOrders(): Promise<NormalizedOrder[]> {
   const all: NormalizedOrder[] = [];
   let offset = 0;
   const limit = 100;
 
   for (;;) {
-    const url = `${WEBFLOW_API}/sites/${encodeURIComponent(webflowSiteId)}/orders?limit=${limit}&offset=${offset}`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${webflowToken}`,
-        Accept: 'application/json',
-      },
-      next: { revalidate: 0 },
-    });
+    const page = await fetchWebflowOrdersPage(offset, limit);
+    all.push(...page.orders);
 
-    if (res.status === 401 || res.status === 403) {
-      throw new WebflowOrdersError('Webflow API rejected the token (check ecommerce:read scope)', res.status);
-    }
-    if (res.status === 429) {
-      throw new WebflowOrdersError('Webflow API rate limited; try again shortly', 429);
-    }
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new WebflowOrdersError(`Webflow orders request failed (${res.status}): ${text.slice(0, 200)}`, res.status);
-    }
-
-    const body = (await res.json()) as ListOrdersResponse;
-    const batch = Array.isArray(body.orders)
-      ? body.orders
-      : Array.isArray(body.items)
-        ? body.items
-        : [];
-    for (const row of batch) {
-      const n = normalizeWebflowOrder(row);
-      if (n && n.lines.length > 0) all.push(n);
-    }
-
-    if (batch.length < limit) break;
+    if (page.rawCount < limit) break;
     offset += limit;
     if (offset > 50000) break;
   }

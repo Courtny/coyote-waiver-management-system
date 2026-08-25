@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildSingleProductSummary } from '@/lib/attendance-summary-cached';
 import { requireAdmin } from '@/lib/checkin-api';
+import { getCachedWebflowOrders } from '@/lib/checkin-cache';
+import { getCheckinConfig } from '@/lib/checkin-config';
 import { setEventActiveFlag } from '@/lib/event-ticket-active';
+import {
+  deleteFrozenSummary,
+  upsertFrozenSummary,
+} from '@/lib/event-ticket-summary-cache';
 
 export async function PATCH(request: NextRequest) {
   const denied = requireAdmin(request);
@@ -24,6 +31,20 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const showAsActive = await setEventActiveFlag(productId, data.show_as_active);
+
+    if (showAsActive) {
+      // Past → Active: drop freeze so next summary recounts live
+      await deleteFrozenSummary(productId);
+    } else {
+      // Active → Past: snapshot current counts from cached orders
+      const { events, skuDisplay } = getCheckinConfig();
+      const { orders } = await getCachedWebflowOrders();
+      const snapshot = buildSingleProductSummary(orders, productId, events, skuDisplay);
+      if (snapshot) {
+        await upsertFrozenSummary(snapshot);
+      }
+    }
+
     return NextResponse.json({ productId, showAsActive });
   } catch (e) {
     console.error('checkin/attendance/active:', e);

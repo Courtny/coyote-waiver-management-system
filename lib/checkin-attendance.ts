@@ -134,6 +134,74 @@ export function splitAttendanceSummaries(summaries: EventAttendanceSummary[]): {
   return { active, past };
 }
 
+/**
+ * Merge live Active summaries with frozen Past snapshots.
+ * Past products missing a snapshot (or listed in `refreshPastProductIds`) must be
+ * supplied via `computedPast` and will be written by the caller.
+ */
+export function mergeAttendanceSummaries(options: {
+  liveActive: EventAttendanceSummary[];
+  frozenPast: Map<string, EventAttendanceSummary>;
+  /** Past products that need a fresh compute (no snapshot or new orders). */
+  pastProductIdsNeedingCompute: string[];
+  computedPast: EventAttendanceSummary[];
+}): {
+  active: EventAttendanceSummary[];
+  past: EventAttendanceSummary[];
+  /** Past summaries that should be persisted as new/updated snapshots. */
+  toFreeze: EventAttendanceSummary[];
+} {
+  const computedById = new Map(
+    options.computedPast.map((s) => [s.productId.trim(), { ...s, showAsActive: false }])
+  );
+  const needing = new Set(options.pastProductIdsNeedingCompute.map((id) => id.trim()));
+
+  const past: EventAttendanceSummary[] = [];
+  const toFreeze: EventAttendanceSummary[] = [];
+  const seenPast = new Set<string>();
+
+  for (const id of needing) {
+    const computed = computedById.get(id);
+    if (!computed) continue;
+    past.push(computed);
+    toFreeze.push(computed);
+    seenPast.add(id);
+  }
+
+  for (const [id, frozen] of options.frozenPast) {
+    if (seenPast.has(id) || needing.has(id)) continue;
+    past.push({ ...frozen, showAsActive: false });
+    seenPast.add(id);
+  }
+
+  // Include any computed past not already covered (e.g. newly discovered past products)
+  for (const [id, computed] of computedById) {
+    if (seenPast.has(id)) continue;
+    past.push(computed);
+    toFreeze.push(computed);
+    seenPast.add(id);
+  }
+
+  const active = options.liveActive
+    .map((s) => ({ ...s, showAsActive: true }))
+    .sort(compareAttendanceSummaries);
+  past.sort(compareAttendanceSummaries);
+
+  return { active, past, toFreeze };
+}
+
+/** All product IDs present in orders (for discovering Past products without snapshots). */
+export function collectProductIdsFromOrders(orders: NormalizedOrder[]): Set<string> {
+  const ids = new Set<string>();
+  for (const order of orders) {
+    for (const line of order.lines) {
+      const pid = line.productId?.trim();
+      if (pid) ids.add(pid);
+    }
+  }
+  return ids;
+}
+
 /** Resolve display title for a product id using cached orders + CHECKIN_EVENTS_JSON */
 export function resolveEventTitle(
   productId: string,
@@ -153,6 +221,37 @@ export function resolveEventTitle(
   return eventTitle(pid, Array.from(variantIds), productName, events);
 }
 
+/** Lightweight productId → title map (no ticket aggregation). */
+export function collectProductTitles(
+  orders: NormalizedOrder[],
+  events: CheckinEventOption[]
+): Map<string, string> {
+  type Acc = { productName: string; variantIds: Set<string> };
+  const byProduct = new Map<string, Acc>();
+
+  for (const order of orders) {
+    for (const line of order.lines) {
+      const pid = line.productId?.trim();
+      if (!pid) continue;
+      let acc = byProduct.get(pid);
+      if (!acc) {
+        acc = { productName: line.productName || line.displayName || '', variantIds: new Set() };
+        byProduct.set(pid, acc);
+      }
+      if (line.variantId) acc.variantIds.add(line.variantId);
+      if (line.productName && line.productName.length > acc.productName.length) {
+        acc.productName = line.productName;
+      }
+    }
+  }
+
+  const titles = new Map<string, string>();
+  for (const [pid, acc] of byProduct) {
+    titles.set(pid, eventTitle(pid, Array.from(acc.variantIds), acc.productName, events));
+  }
+  return titles;
+}
+
 type SkuAgg = { displayName: string; qty: number; imageUrl?: string };
 
 type Agg = {
@@ -163,12 +262,27 @@ type Agg = {
   orderIds: Set<string>;
   /** First variant image seen for this product (event card thumbnail). */
   imageUrl?: string;
+  /** Cover from Mercenary / Admission Only when present. */
+  preferredCoverImageUrl?: string;
 };
+
+/**
+ * True for the default FTX/STX event poster SKU: Mercenary (place as needed), Admission Only.
+ * Rental kits use a different faction-specific image and must not win the event card.
+ */
+export function isPreferredEventCoverDisplayName(displayName: string): boolean {
+  const n = displayName.toLowerCase();
+  if (!n.includes('mercenary')) return false;
+  if (n.includes('rental')) return false;
+  return n.includes('admission only');
+}
 
 export function buildAttendanceSummaries(
   orders: NormalizedOrder[],
   events: CheckinEventOption[],
-  skuDisplay: Record<string, string>
+  skuDisplay: Record<string, string>,
+  /** When set, only aggregate these product IDs (live/Active recount). */
+  onlyProductIds?: Set<string>
 ): EventAttendanceSummary[] {
   const byProduct = new Map<string, Agg>();
 
@@ -177,6 +291,7 @@ export function buildAttendanceSummaries(
     for (const line of order.lines) {
       const pid = line.productId?.trim();
       if (!pid) continue;
+      if (onlyProductIds && !onlyProductIds.has(pid)) continue;
       productsTouched.add(pid);
 
       let agg = byProduct.get(pid);
@@ -194,11 +309,18 @@ export function buildAttendanceSummaries(
       if (line.productName && line.productName.length > (agg.productName?.length || 0)) {
         agg.productName = line.productName;
       }
-      if (line.imageUrl && !agg.imageUrl) {
-        agg.imageUrl = line.imageUrl;
-      }
 
       const label = displayForSku(line.sku, line.displayName, skuDisplay);
+      if (line.imageUrl) {
+        if (!agg.imageUrl) agg.imageUrl = line.imageUrl;
+        if (
+          !agg.preferredCoverImageUrl &&
+          (isPreferredEventCoverDisplayName(line.displayName) ||
+            isPreferredEventCoverDisplayName(label))
+        ) {
+          agg.preferredCoverImageUrl = line.imageUrl;
+        }
+      }
       const key = line.sku || line.variantId || label;
       const prev = agg.skuMap.get(key);
       const addQty = line.quantity;
@@ -233,6 +355,7 @@ export function buildAttendanceSummaries(
       .sort((a, b) => a.sku.localeCompare(b.sku));
 
     const totalTickets = skuBreakdown.reduce((s, r) => s + r.quantity, 0);
+    const imageUrl = agg.preferredCoverImageUrl || agg.imageUrl;
 
     summaries.push({
       productId: agg.productId,
@@ -240,7 +363,7 @@ export function buildAttendanceSummaries(
       orderCount: agg.orderIds.size,
       totalTickets,
       skuBreakdown,
-      ...(agg.imageUrl ? { imageUrl: agg.imageUrl } : {}),
+      ...(imageUrl ? { imageUrl } : {}),
     });
   }
 
