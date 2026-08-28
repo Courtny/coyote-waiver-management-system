@@ -2,6 +2,7 @@ import { getCheckinConfig } from './checkin-config';
 import type { NormalizedOrder } from './webflow-orders';
 import {
   findWaiversByEmail,
+  findWaiversByExactOrNicknameName,
   findWaiversByNameFuzzy,
   findWaiversByPhone,
   normalizeEmail,
@@ -10,6 +11,7 @@ import {
   type WaiverConfidence,
   type WaiverRow,
 } from './waiver-checkin-lookup';
+import { parsePersonName } from './person-name-match';
 
 export type CheckinWaiverResult = {
   status: 'active' | 'expired' | 'not_found';
@@ -117,6 +119,39 @@ function orderMatchesCustomer(
   return false;
 }
 
+function waiverFromRow(row: WaiverRow): NonNullable<CheckinWaiverResult['waiver']> {
+  return {
+    id: row.id,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email,
+    phone: row.phone,
+    waiverYear: row.waiverYear,
+    signatureDate: row.signatureDate,
+  };
+}
+
+function nameIdentityKey(row: WaiverRow): string {
+  const parsed = parsePersonName(`${row.firstName} ${row.lastName}`);
+  if (parsed?.first && parsed.last) return `${parsed.first}|${parsed.last}`;
+  return `${row.firstName}|${row.lastName}`.toLowerCase().trim();
+}
+
+function resultFromRows(
+  rows: WaiverRow[],
+  currentYear: number,
+  confidence: Extract<WaiverConfidence, 'email_match' | 'phone_match' | 'name_exact' | 'name_fuzzy'>
+): CheckinWaiverResult | null {
+  const best = pickBestWaiverYear(rows, currentYear);
+  if (!best) return null;
+  return {
+    status: best.waiverYear === currentYear ? 'active' : 'expired',
+    confidence,
+    ambiguous: false,
+    waiver: waiverFromRow(best),
+  };
+}
+
 async function resolveWaiver(
   input: ResolvePersonInput,
   currentYear: number
@@ -124,27 +159,12 @@ async function resolveWaiver(
   const email = input.email?.trim();
   const phone = input.phone?.trim();
   const name = input.name?.trim();
+  const emailTried = Boolean(email);
 
   if (email) {
     const rows = await findWaiversByEmail(email);
-    const best = pickBestWaiverYear(rows, currentYear);
-    if (best) {
-      return {
-        status: best.waiverYear === currentYear ? 'active' : 'expired',
-        confidence: 'email_match',
-        ambiguous: false,
-        waiver: {
-          id: best.id,
-          firstName: best.firstName,
-          lastName: best.lastName,
-          email: best.email,
-          phone: best.phone,
-          waiverYear: best.waiverYear,
-          signatureDate: best.signatureDate,
-        },
-      };
-    }
-    return { status: 'not_found', confidence: 'not_found', ambiguous: false };
+    const hit = resultFromRows(rows, currentYear, 'email_match');
+    if (hit) return hit;
   }
 
   if (phone && normalizePhoneDigits(phone).length >= 7) {
@@ -162,56 +182,20 @@ async function resolveWaiver(
         })),
       };
     }
-    const best = pickBestWaiverYear(rows, currentYear);
-    if (best) {
-      return {
-        status: best.waiverYear === currentYear ? 'active' : 'expired',
-        confidence: 'phone_match',
-        ambiguous: false,
-        waiver: {
-          id: best.id,
-          firstName: best.firstName,
-          lastName: best.lastName,
-          email: best.email,
-          phone: best.phone,
-          waiverYear: best.waiverYear,
-          signatureDate: best.signatureDate,
-        },
-      };
-    }
+    const hit = resultFromRows(rows, currentYear, 'phone_match');
+    if (hit) return hit;
   }
 
   if (name && name.length >= 2) {
-    const fuzzy = await findWaiversByNameFuzzy(name, 8);
-    if (fuzzy.length === 0) {
-      /* fall through */
-    } else if (fuzzy.length === 1) {
-      const best = pickBestWaiverYear([fuzzy[0]], currentYear);
-      if (best) {
-        return {
-          status: best.waiverYear === currentYear ? 'active' : 'expired',
-          confidence: 'name_fuzzy',
-          ambiguous: false,
-          waiver: {
-            id: best.id,
-            firstName: best.firstName,
-            lastName: best.lastName,
-            email: best.email,
-            phone: best.phone,
-            waiverYear: best.waiverYear,
-            signatureDate: best.signatureDate,
-          },
-        };
-      }
-    } else {
-      const top = fuzzy[0].relevance;
-      const tied = fuzzy.filter((r) => r.relevance >= top - 0.04 && r.relevance >= 0.3);
-      if (tied.length > 1) {
+    const exactRows = await findWaiversByExactOrNicknameName(name);
+    if (exactRows.length > 0) {
+      const identities = new Set(exactRows.map(nameIdentityKey));
+      if (identities.size > 1) {
         return {
           status: 'not_found',
           confidence: 'not_found',
           ambiguous: true,
-          candidates: tied.slice(0, 8).map((r) => ({
+          candidates: exactRows.slice(0, 8).map((r) => ({
             id: r.id,
             firstName: r.firstName,
             lastName: r.lastName,
@@ -219,23 +203,37 @@ async function resolveWaiver(
           })),
         };
       }
-      const bestRow = fuzzy[0];
-      const best = pickBestWaiverYear([bestRow], currentYear);
-      if (best) {
-        return {
-          status: best.waiverYear === currentYear ? 'active' : 'expired',
-          confidence: 'name_fuzzy',
-          ambiguous: false,
-          waiver: {
-            id: best.id,
-            firstName: best.firstName,
-            lastName: best.lastName,
-            email: best.email,
-            phone: best.phone,
-            waiverYear: best.waiverYear,
-            signatureDate: best.signatureDate,
-          },
-        };
+      const hit = resultFromRows(exactRows, currentYear, 'name_exact');
+      if (hit) return hit;
+    }
+
+    // Fuzzy name is only used when we did not already try (and miss) an email.
+    // Ticket rows always have an email; a fuzzy last-name hit would be too loose.
+    if (!emailTried) {
+      const fuzzy = await findWaiversByNameFuzzy(name, 8);
+      if (fuzzy.length === 0) {
+        /* fall through */
+      } else if (fuzzy.length === 1) {
+        const hit = resultFromRows([fuzzy[0]], currentYear, 'name_fuzzy');
+        if (hit) return hit;
+      } else {
+        const top = fuzzy[0].relevance;
+        const tied = fuzzy.filter((r) => r.relevance >= top - 0.04 && r.relevance >= 0.3);
+        if (tied.length > 1) {
+          return {
+            status: 'not_found',
+            confidence: 'not_found',
+            ambiguous: true,
+            candidates: tied.slice(0, 8).map((r) => ({
+              id: r.id,
+              firstName: r.firstName,
+              lastName: r.lastName,
+              email: r.email,
+            })),
+          };
+        }
+        const hit = resultFromRows([fuzzy[0]], currentYear, 'name_fuzzy');
+        if (hit) return hit;
       }
     }
   }
@@ -341,7 +339,7 @@ export async function lookupWaiverOnly(
   return resolveWaiver(input, currentYear);
 }
 
-/** Ticket list row: email and/or purchaser name only (no phone on Webflow orders). */
+/** Ticket list row: purchase email, then exact / nickname name. No phone on Webflow orders. */
 export async function resolveWaiverForTicketCustomer(
   input: { name?: string; email?: string },
   currentYear: number

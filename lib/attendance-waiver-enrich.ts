@@ -5,14 +5,11 @@ import { computeWaiverIndicator } from './ticket-waiver-indicator';
 
 function resolveInputForLine(line: EventAttendanceLine): { name?: string; email?: string } {
   const em = line.customerEmail?.trim();
-  if (em && em !== '—') {
-    return { email: em };
-  }
   const nm = line.customerName?.trim();
-  if (nm && nm !== '—') {
-    return { name: nm };
-  }
-  return {};
+  return {
+    ...(em && em !== '—' ? { email: em } : {}),
+    ...(nm && nm !== '—' ? { name: nm } : {}),
+  };
 }
 
 export function customerDedupeKey(line: EventAttendanceLine): string {

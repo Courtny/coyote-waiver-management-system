@@ -63,6 +63,12 @@ export function computeWaiverIndicator(
         tooltip: 'Confirmed: waiver on file (matched via email or phone).',
       };
     }
+    if (result.confidence === 'name_exact') {
+      return {
+        level: 'green',
+        tooltip: 'Confirmed: waiver on file (matched via exact name or common short name).',
+      };
+    }
     if (result.confidence === 'name_fuzzy') {
       return {
         level: 'yellow',

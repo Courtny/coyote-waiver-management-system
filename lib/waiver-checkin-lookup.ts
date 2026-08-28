@@ -1,6 +1,12 @@
 import { pool } from './db';
+import { firstNameVariants, parsePersonName, personNamesMatch } from './person-name-match';
 
-export type WaiverConfidence = 'email_match' | 'phone_match' | 'name_fuzzy' | 'not_found';
+export type WaiverConfidence =
+  | 'email_match'
+  | 'phone_match'
+  | 'name_exact'
+  | 'name_fuzzy'
+  | 'not_found';
 
 export type WaiverRow = {
   id: number;
@@ -77,6 +83,41 @@ export async function findWaiversByPhone(phone: string): Promise<WaiverRow[]> {
     [digits]
   );
   return result.rows.map((r) => mapRow(r as Record<string, unknown>));
+}
+
+/**
+ * Field waivers whose last name matches and given name is the same or a known
+ * short form (Ben / Benjamin). Does not search minor names.
+ */
+export async function findWaiversByExactOrNicknameName(fullName: string): Promise<WaiverRow[]> {
+  const parsed = parsePersonName(fullName);
+  if (!parsed?.first || !parsed.last) return [];
+  const variants = firstNameVariants(parsed.first);
+  if (variants.length === 0) return [];
+
+  const result = await pool.query(
+    `SELECT id,
+      firstname as "firstName",
+      lastname as "lastName",
+      email,
+      phone,
+      yearofbirth as "yearOfBirth",
+      signaturedate as "signatureDate",
+      waiveryear as "waiverYear"
+    FROM waivers
+    WHERE ${FIELD_WAIVER_FILTER}
+      AND REGEXP_REPLACE(LOWER(TRIM(lastname)), '[^a-z]', '', 'g') = $1
+      AND (
+        REGEXP_REPLACE(LOWER(TRIM(firstname)), '[^a-z]', '', 'g') = ANY($2::text[])
+        OR REGEXP_REPLACE(LOWER(SPLIT_PART(TRIM(firstname), ' ', 1)), '[^a-z]', '', 'g') = ANY($2::text[])
+      )
+    ORDER BY waiveryear DESC, signaturedate DESC`,
+    [parsed.last, variants]
+  );
+
+  return result.rows
+    .map((r) => mapRow(r as Record<string, unknown>))
+    .filter((row) => personNamesMatch(fullName, row.firstName, row.lastName));
 }
 
 export async function findWaiversByNameFuzzy(fullName: string, limit = 8): Promise<
