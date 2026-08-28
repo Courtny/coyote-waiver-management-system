@@ -7,6 +7,8 @@ import {
   buildAttendanceSummaries,
   compareAttendanceSummaries,
   isPreferredEventCoverDisplayName,
+  lineHasRental,
+  rentalCountForLine,
   flagEventPatchRecipients,
   isFtxOrStxEventTitle,
   openPlayPinRank,
@@ -169,6 +171,39 @@ describe('isPreferredEventCoverDisplayName', () => {
         'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Coyote Syndicate, ADMISSION TYPE: Admission Only'
       ),
       false
+    );
+  });
+});
+
+const IRON_RIDGE_ADMISSION_ONLY =
+  'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Mercenary [Place As Needed], ADMISSION TYPE: Admission Only';
+const IRON_RIDGE_RENTAL_KIT =
+  'Airsoft FTX: Iron Ridge — Airsoft FTX: Iron Ridge FACTION: Mercenary [Place As Needed], ADMISSION TYPE: Admission + Rental Kit';
+
+describe('lineHasRental', () => {
+  it('detects rental kits and rejects admission only', () => {
+    assert.equal(lineHasRental(IRON_RIDGE_RENTAL_KIT), true);
+    assert.equal(lineHasRental(IRON_RIDGE_ADMISSION_ONLY), false);
+    assert.equal(lineHasRental('Admission Only', 'airsoft-ftx-rental-kit'), true);
+  });
+});
+
+describe('rentalCountForLine', () => {
+  it('returns 0 for admission-only lines', () => {
+    assert.equal(
+      rentalCountForLine({ displayName: IRON_RIDGE_ADMISSION_ONLY, quantity: 2, partySize: 1 }),
+      0
+    );
+  });
+
+  it('multiplies quantity by party size for rental lines', () => {
+    assert.equal(
+      rentalCountForLine({ displayName: IRON_RIDGE_RENTAL_KIT, quantity: 1, partySize: 4 }),
+      4
+    );
+    assert.equal(
+      rentalCountForLine({ displayName: IRON_RIDGE_RENTAL_KIT, quantity: 2, partySize: 1 }),
+      2
     );
   });
 });

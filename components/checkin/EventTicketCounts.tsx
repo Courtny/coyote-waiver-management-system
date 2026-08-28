@@ -13,8 +13,9 @@ import {
   Loader2,
   RefreshCw,
   Users,
+  X,
 } from 'lucide-react';
-import type { EventAttendanceLine } from '@/lib/checkin-attendance';
+import { lineHasRental, rentalCountForLine, type EventAttendanceLine } from '@/lib/checkin-attendance';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
 import { Label, Switch } from '@coyote-force/ui';
 
@@ -64,6 +65,10 @@ function rowMatchesLineSearch(row: EventAttendanceLine, queryLower: string): boo
 function rowAllCheckedIn(row: EventAttendanceLine): boolean {
   const checked = row.checkedInUnits?.length ?? 0;
   return checked >= row.quantity && row.quantity > 0;
+}
+
+function rowLineKey(row: EventAttendanceLine): string {
+  return `${row.orderId}|${row.variantId}|${row.sku}`;
 }
 
 type EventDetailPanelProps = {
@@ -193,6 +198,114 @@ function TicketCheckInButtons({
   );
 }
 
+function LineDetailTray({
+  row,
+  onClose,
+}: {
+  row: EventAttendanceLine;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  const rentals = rentalCountForLine(row);
+
+  return (
+    <div className="fixed inset-0 z-[60]" role="presentation">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        aria-label="Close ticket details"
+        onClick={onClose}
+      />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ticket-line-detail-title"
+        className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-card border-l border-border shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+          <div className="min-w-0">
+            <h3 id="ticket-line-detail-title" className="text-lg font-semibold text-foreground">
+              Ticket details
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate">{row.customerName}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border hover:bg-muted"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {row.imageUrl ? (
+            <img
+              src={row.imageUrl}
+              alt={row.displayName}
+              className="h-28 w-28 rounded-md object-cover border border-border bg-card"
+            />
+          ) : null}
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">SKU / ticket</p>
+            <p className="text-sm text-foreground mt-1 leading-snug">{row.displayName}</p>
+            {row.sku ? (
+              <p className="text-xs text-muted-foreground font-mono mt-1 break-all">{row.sku}</p>
+            ) : null}
+          </div>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Customer</dt>
+              <dd className="mt-0.5 text-foreground break-words">{row.customerName}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</dt>
+              <dd className="mt-0.5 text-foreground break-all">{row.customerEmail}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quantity</dt>
+              <dd className="mt-0.5 text-foreground">{row.quantity}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Party size</dt>
+              <dd className="mt-0.5 text-foreground">{row.partySize || 1}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Rentals</dt>
+              <dd className="mt-0.5 text-foreground">{rentals}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Order</dt>
+              <dd className="mt-0.5 text-foreground font-mono text-xs break-all">{row.orderId}</dd>
+            </div>
+            <div className="col-span-2">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Date</dt>
+              <dd className="mt-0.5 text-foreground">{formatOrderDate(row.orderedAt)}</dd>
+            </div>
+          </dl>
+          {row.receivesEventPatch ? (
+            <span className="inline-flex items-center rounded-full bg-status-amber/25 border border-amber-300 px-2 py-0.5 text-xs font-medium text-foreground">
+              Receives Event Patch
+            </span>
+          ) : null}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 function EventDetailPanel({
   detail,
   detailLoading,
@@ -203,18 +316,15 @@ function EventDetailPanel({
   onBack,
   onLinesChange,
 }: EventDetailPanelProps) {
-  const [includedSkus, setIncludedSkus] = useState<Set<string>>(() => new Set());
+  const [showRentals, setShowRentals] = useState(true);
+  const [showNonRentals, setShowNonRentals] = useState(true);
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<'quantity' | 'date'>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [uncheckedOnly, setUncheckedOnly] = useState(false);
   const [savingActive, setSavingActive] = useState(false);
-
-  useEffect(() => {
-    if (detailLoading) return;
-    setIncludedSkus(new Set(detail.lines.map((l) => l.sku || '')));
-  }, [detail.productId, detailLoading, detail.lines]);
+  const [selectedLineKey, setSelectedLineKey] = useState<string | null>(null);
 
   useEffect(() => {
     setFilterExpanded(false);
@@ -222,6 +332,9 @@ function EventDetailPanel({
     setSortKey('date');
     setSortDir('desc');
     setUncheckedOnly(false);
+    setShowRentals(true);
+    setShowNonRentals(true);
+    setSelectedLineKey(null);
   }, [detail.productId]);
 
   const updateLineCheckins = (orderId: string, variantId: string, checkedInUnits: number[]) => {
@@ -234,23 +347,22 @@ function EventDetailPanel({
     );
   };
 
-  const skuOptions = useMemo(() => {
-    if (!detail.lines.length) return [] as { skuKey: string; displayName: string }[];
-    const map = new Map<string, string>();
-    for (const row of detail.lines) {
-      const k = row.sku || '';
-      if (!map.has(k)) map.set(k, row.displayName);
-    }
-    return Array.from(map.entries())
-      .map(([skuKey, displayName]) => ({ skuKey, displayName }))
-      .sort((a, b) =>
-        a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' })
-      );
-  }, [detail.lines]);
+  const hasRentalLines = useMemo(
+    () => detail.lines.some((row) => lineHasRental(row.displayName, row.sku)),
+    [detail.lines]
+  );
+  const hasNonRentalLines = useMemo(
+    () => detail.lines.some((row) => !lineHasRental(row.displayName, row.sku)),
+    [detail.lines]
+  );
+  const showRentalFilter = hasRentalLines && hasNonRentalLines;
 
   const filteredLines = useMemo(
-    () => detail.lines.filter((row) => includedSkus.has(row.sku || '')),
-    [detail.lines, includedSkus]
+    () =>
+      detail.lines.filter((row) =>
+        lineHasRental(row.displayName, row.sku) ? showRentals : showNonRentals
+      ),
+    [detail.lines, showRentals, showNonRentals]
   );
 
   const textFilteredLines = useMemo(() => {
@@ -288,6 +400,7 @@ function EventDetailPanel({
   }, [textFilteredLines, sortKey, sortDir]);
 
   const ticketSum = textFilteredLines.reduce((s, r) => s + r.quantity, 0);
+  const rentalFilterActive = showRentalFilter && (!showRentals || !showNonRentals);
 
   const toggleColumnSort = (key: 'quantity' | 'date') => {
     if (sortKey !== key) {
@@ -298,22 +411,18 @@ function EventDetailPanel({
     setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
   };
 
-  const toggleSku = (skuKey: string) => {
-    setIncludedSkus((prev) => {
-      const next = new Set(prev);
-      if (next.has(skuKey)) next.delete(skuKey);
-      else next.add(skuKey);
-      return next;
-    });
+  const selectedLine = useMemo(() => {
+    if (!selectedLineKey) return null;
+    return detail.lines.find((row) => rowLineKey(row) === selectedLineKey) ?? null;
+  }, [selectedLineKey, detail.lines]);
+
+  const openLine = (row: EventAttendanceLine) => {
+    setSelectedLineKey(rowLineKey(row));
   };
 
-  const selectAllSkus = () => {
-    setIncludedSkus(new Set(skuOptions.map((o) => o.skuKey)));
-  };
-
-  const clearAllSkus = () => {
-    setIncludedSkus(new Set());
-  };
+  const closeTray = useCallback(() => {
+    setSelectedLineKey(null);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -362,11 +471,11 @@ function EventDetailPanel({
             </span>
             {' · '}
             {textFilteredLines.length} line{textFilteredLines.length !== 1 ? 's' : ''} · {ticketSum} tickets
-            {filteredLines.length !== detail.lines.length ? (
+            {rentalFilterActive ? (
               <span className="text-muted-foreground"> (of {detail.lines.length} lines)</span>
             ) : null}
             {searchQuery.trim() && textFilteredLines.length < filteredLines.length ? (
-              <span className="text-muted-foreground"> (of {filteredLines.length} matching SKU filters)</span>
+              <span className="text-muted-foreground"> (of {filteredLines.length} matching filters)</span>
             ) : null}
           </p>
         </div>
@@ -376,21 +485,27 @@ function EventDetailPanel({
         <TableSkeleton columns={9} rows={10} ariaLabel="Loading ticket lines" />
       ) : (
         <>
-          {skuOptions.length > 1 ? (
+          {showRentalFilter ? (
             <div className="rounded border border-border bg-muted/80 overflow-hidden">
               <button
                 type="button"
-                id="event-ticket-sku-filter-toggle"
+                id="event-ticket-rental-filter-toggle"
                 onClick={() => setFilterExpanded((v) => !v)}
                 className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/80 transition-colors"
                 aria-expanded={filterExpanded}
-                aria-controls="event-ticket-sku-filter-panel"
+                aria-controls="event-ticket-rental-filter-panel"
               >
-                <span className="text-sm font-medium text-foreground">Filter by ticket / SKU</span>
+                <span className="text-sm font-medium text-foreground">Filter by rental</span>
                 <span className="flex items-center gap-2 shrink-0">
                   {!filterExpanded ? (
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {includedSkus.size}/{skuOptions.length} selected
+                    <span className="text-xs text-muted-foreground">
+                      {showRentals && showNonRentals
+                        ? 'All'
+                        : showRentals
+                          ? 'Rental only'
+                          : showNonRentals
+                            ? 'No rental only'
+                            : 'None'}
                     </span>
                   ) : null}
                   <ChevronDown
@@ -402,40 +517,34 @@ function EventDetailPanel({
               </button>
               {filterExpanded ? (
                 <div
-                  id="event-ticket-sku-filter-panel"
+                  id="event-ticket-rental-filter-panel"
                   role="region"
-                  aria-labelledby="event-ticket-sku-filter-toggle"
-                  className="border-t border-border px-4 pb-3"
+                  aria-labelledby="event-ticket-rental-filter-toggle"
+                  className="border-t border-border px-4 py-3"
                 >
-                  <div className="flex flex-wrap justify-end gap-2 mb-3 pt-3">
-                    <button type="button" className="inline-flex items-center justify-center rounded border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted text-xs py-1.5 px-2" onClick={selectAllSkus}>
-                      Select all
-                    </button>
-                    <button type="button" className="inline-flex items-center justify-center rounded border border-border bg-background px-2.5 py-1.5 text-sm font-medium hover:bg-muted text-xs py-1.5 px-2" onClick={clearAllSkus}>
-                      Clear
-                    </button>
-                  </div>
-                  <ul className="flex flex-wrap gap-x-4 gap-y-2">
-                    {skuOptions.map((opt) => (
-                      <li key={opt.skuKey || '__empty__'}>
-                        <label className="inline-flex items-start gap-2 cursor-pointer text-sm">
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 rounded border-input"
-                            checked={includedSkus.has(opt.skuKey)}
-                            onChange={() => toggleSku(opt.skuKey)}
-                          />
-                          <span>
-                            <span className="font-medium text-foreground">{opt.displayName}</span>
-                            {opt.skuKey ? (
-                              <span className="block text-xs text-muted-foreground font-mono mt-0.5">{opt.skuKey}</span>
-                            ) : (
-                              <span className="block text-xs text-muted-foreground mt-0.5">(no SKU)</span>
-                            )}
-                          </span>
-                        </label>
-                      </li>
-                    ))}
+                  <ul className="flex flex-wrap gap-x-6 gap-y-2">
+                    <li>
+                      <label className="inline-flex items-center gap-2 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          className="rounded border-input"
+                          checked={showRentals}
+                          onChange={(e) => setShowRentals(e.target.checked)}
+                        />
+                        <span className="font-medium text-foreground">Rental</span>
+                      </label>
+                    </li>
+                    <li>
+                      <label className="inline-flex items-center gap-2 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          className="rounded border-input"
+                          checked={showNonRentals}
+                          onChange={(e) => setShowNonRentals(e.target.checked)}
+                        />
+                        <span className="font-medium text-foreground">No rental</span>
+                      </label>
+                    </li>
                   </ul>
                 </div>
               ) : null}
@@ -475,8 +584,8 @@ function EventDetailPanel({
               <colgroup>
                 <col className="w-[5.5rem]" />
                 <col className="w-10" />
-                <col className="w-[10rem]" />
-                <col className="w-[18%]" />
+                <col className="w-[22%]" />
+                <col className="w-16" />
                 <col className="w-[22%]" />
                 <col className="w-14" />
                 <col className="w-[12%]" />
@@ -491,8 +600,8 @@ function EventDetailPanel({
                   <th className="px-2 py-3 text-left text-foreground font-semibold" scope="col">
                     <span className="sr-only">Waiver</span>
                   </th>
-                  <th className="px-3 py-3 text-left text-foreground font-semibold">SKU / ticket</th>
                   <th className="px-3 py-3 text-left text-foreground font-semibold">Customer</th>
+                  <th className="px-3 py-3 text-right text-foreground font-semibold">Rental</th>
                   <th className="px-3 py-3 text-left text-foreground font-semibold">Email</th>
                   <th
                     scope="col"
@@ -553,10 +662,10 @@ function EventDetailPanel({
                       No line items for this product in cached orders.
                     </td>
                   </tr>
-                ) : includedSkus.size === 0 ? (
+                ) : showRentalFilter && !showRentals && !showNonRentals ? (
                   <tr>
                     <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
-                      No tickets / SKUs selected — choose at least one filter above or use Select all.
+                      No rental filters selected — choose Rental, No rental, or both.
                     </td>
                   </tr>
                 ) : filteredLines.length > 0 &&
@@ -578,19 +687,34 @@ function EventDetailPanel({
                 ) : (
                   sortedLines.map((row, i) => {
                     const allChecked = rowAllCheckedIn(row);
+                    const isSelected = selectedLineKey === rowLineKey(row);
+                    const rentals = rentalCountForLine(row);
                     return (
                     <tr
-                      key={`${row.orderId}-${row.variantId}-${row.sku}-${i}`}
+                      key={rowLineKey(row) + String(i)}
+                      tabIndex={0}
+                      aria-selected={isSelected}
+                      onClick={() => openLine(row)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openLine(row);
+                        }
+                      }}
                       className={
-                        'border-b border-border transition-colors ' +
-                        (allChecked ? 'opacity-50 bg-muted' : 'hover:bg-muted')
+                        'border-b border-border transition-colors cursor-pointer ' +
+                        (isSelected
+                          ? 'bg-muted ring-1 ring-inset ring-border'
+                          : allChecked
+                            ? 'opacity-50 bg-muted hover:bg-muted'
+                            : 'hover:bg-muted')
                       }
                     >
                       <td className="px-3 py-3 align-middle">
                         {row.imageUrl ? (
                           <img
                             src={row.imageUrl}
-                            alt={row.displayName}
+                            alt=""
                             className="h-14 w-14 rounded-md object-cover border border-border bg-card"
                           />
                         ) : (
@@ -621,33 +745,40 @@ function EventDetailPanel({
                           />
                         )}
                       </td>
-                      <td className="px-3 py-3 font-medium align-top min-w-0">
-                        <div className="text-foreground text-sm leading-snug break-words">{row.displayName}</div>
-                        {row.sku && (
-                          <div className="text-xs text-muted-foreground font-mono mt-0.5 break-all">{row.sku}</div>
-                        )}
-                        {row.receivesEventPatch && (
-                          <span className="inline-flex items-center rounded-full bg-status-amber/25 border border-amber-300 px-2 py-0.5 text-xs font-medium text-foreground mt-1">
-                            Receives Event Patch
-                          </span>
-                        )}
+                      <td className="px-3 py-3 text-muted-foreground align-middle min-w-0 break-words">
+                        <span className="inline-flex items-center gap-2">
+                          {row.customerName}
+                          {row.receivesEventPatch ? (
+                            <span
+                              className="inline-block h-2 w-2 rounded-full shrink-0 bg-amber-400"
+                              title="Receives Event Patch"
+                              aria-label="Receives Event Patch"
+                            />
+                          ) : null}
+                        </span>
                       </td>
-                      <td className="px-3 py-3 text-muted-foreground align-top min-w-0 break-words">
-                        {row.customerName}
+                      <td className="px-3 py-3 text-right font-medium align-middle tabular-nums">
+                        <span className={rentals > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                          {rentals}
+                        </span>
                       </td>
-                      <td className="px-3 py-3 text-muted-foreground align-top min-w-0 break-all">
+                      <td className="px-3 py-3 text-muted-foreground align-middle min-w-0 break-all">
                         {row.customerEmail}
                       </td>
-                      <td className="px-3 py-3 text-right text-muted-foreground font-medium align-top">
+                      <td className="px-3 py-3 text-right text-muted-foreground font-medium align-middle">
                         {row.quantity}
                       </td>
-                      <td className="px-3 py-3 font-mono text-xs text-muted-foreground align-top break-all min-w-0">
+                      <td className="px-3 py-3 font-mono text-xs text-muted-foreground align-middle break-all min-w-0">
                         {row.orderId}
                       </td>
-                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap align-top">
+                      <td className="px-3 py-3 text-muted-foreground whitespace-nowrap align-middle">
                         {formatOrderDate(row.orderedAt)}
                       </td>
-                      <td className="px-3 py-3 align-top">
+                      <td
+                        className="px-3 py-3 align-middle"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
                         <TicketCheckInButtons
                           row={row}
                           productId={detail.productId}
@@ -663,6 +794,7 @@ function EventDetailPanel({
               </tbody>
             </table>
           </div>
+          {selectedLine ? <LineDetailTray row={selectedLine} onClose={closeTray} /> : null}
         </>
       )}
     </div>
@@ -887,7 +1019,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-muted-foreground text-sm">
-          Ticket totals from cached Webflow orders, grouped by product (event). Open a card for orders and SKU breakdown.
+          Ticket totals from cached Webflow orders, grouped by product (event). Open a card for orders and rental counts.
         </p>
         <button
           type="button"

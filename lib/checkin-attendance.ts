@@ -277,6 +277,23 @@ export function isPreferredEventCoverDisplayName(displayName: string): boolean {
   return n.includes('admission only');
 }
 
+/** True when the Webflow line is a rental kit (name or SKU contains "rental"). */
+export function lineHasRental(displayName: string, sku?: string): boolean {
+  return `${displayName} ${sku ?? ''}`.toLowerCase().includes('rental');
+}
+
+/** Rental kit count for a line: quantity × party size when the SKU is a rental, else 0. */
+export function rentalCountForLine(line: {
+  displayName: string;
+  sku?: string;
+  quantity: number;
+  partySize?: number;
+}): number {
+  if (!lineHasRental(line.displayName, line.sku)) return 0;
+  const party = line.partySize && line.partySize > 0 ? line.partySize : 1;
+  return line.quantity * party;
+}
+
 export function buildAttendanceSummaries(
   orders: NormalizedOrder[],
   events: CheckinEventOption[],
