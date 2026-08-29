@@ -746,16 +746,12 @@ function EventDetailPanel({
                         )}
                       </td>
                       <td className="px-3 py-3 text-muted-foreground align-middle min-w-0 break-words">
-                        <span className="inline-flex items-center gap-2">
-                          {row.customerName}
-                          {row.receivesEventPatch ? (
-                            <span
-                              className="inline-block h-2 w-2 rounded-full shrink-0 bg-amber-400"
-                              title="Receives Event Patch"
-                              aria-label="Receives Event Patch"
-                            />
-                          ) : null}
-                        </span>
+                        <div>{row.customerName}</div>
+                        {row.receivesEventPatch ? (
+                          <span className="inline-flex items-center rounded-full bg-status-amber/25 border border-amber-300 px-2 py-0.5 text-xs font-medium text-foreground mt-1">
+                            Receives Event Patch
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-3 py-3 text-right font-medium align-middle tabular-nums">
                         <span className={rentals > 0 ? 'text-foreground' : 'text-muted-foreground'}>
