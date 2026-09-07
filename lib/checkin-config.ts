@@ -155,9 +155,22 @@ function parseMoneyMinorUnitsFlag(raw: string | undefined): boolean {
 
 export function getCheckinConfig() {
   const { events, eventsConfig } = resolveEventsConfig();
+  const coyoteOpsOrdersBaseUrl = (
+    process.env.CHECKIN_ORDERS_BASE_URL ||
+    process.env.COYOTE_OPS_ORDERS_BASE_URL ||
+    ''
+  )
+    .trim()
+    .replace(/\/+$/, '');
+  const coyoteOpsCheckinSecret = (
+    process.env.CHECKIN_API_SECRET || ''
+  ).trim();
+
   return {
     webflowToken: process.env.WEBFLOW_API_TOKEN || '',
     webflowSiteId: process.env.WEBFLOW_SITE_ID || '',
+    coyoteOpsOrdersBaseUrl,
+    coyoteOpsCheckinSecret,
     skuPartySize: parseJsonMap(process.env.CHECKIN_SKU_PARTY_SIZE),
     skuDisplay: parseJsonStringMap(process.env.CHECKIN_SKU_DISPLAY),
     events,
@@ -175,4 +188,15 @@ export function getCheckinConfig() {
 export function isWebflowConfigured(): boolean {
   const c = getCheckinConfig();
   return Boolean(c.webflowToken && c.webflowSiteId);
+}
+
+/** coyote-ops check-in API (P6) — lookup by code/email on next.coyoteforce.com */
+export function isCoyoteOpsConfigured(): boolean {
+  const c = getCheckinConfig();
+  return Boolean(c.coyoteOpsOrdersBaseUrl && c.coyoteOpsCheckinSecret);
+}
+
+/** Gate purchases available from Webflow cache and/or coyote-ops dual-read */
+export function isOrdersSourceConfigured(): boolean {
+  return isWebflowConfigured() || isCoyoteOpsConfigured();
 }

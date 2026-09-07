@@ -24,6 +24,8 @@ type Meta = {
   events: { id: string; label: string }[];
   eventsConfig?: EventsConfigStatus;
   webflowConfigured: boolean;
+  coyoteOpsConfigured?: boolean;
+  ordersSourceConfigured?: boolean;
 };
 
 type WaiverPayload = {
@@ -252,11 +254,19 @@ export default function AdminCheckInPage() {
       }
     >
         <div className="mx-auto max-w-3xl">
-        {meta && !meta.webflowConfigured && (
+        {meta && !meta.webflowConfigured && !meta.coyoteOpsConfigured && (
           <div className="mb-6 rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
-            Webflow orders are not configured — purchase history will stay empty until{' '}
-            <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
-            <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_SITE_ID</code> are set.
+            Purchase history needs Webflow (
+            <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_API_TOKEN</code> +{' '}
+            <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_SITE_ID</code>) and/or coyote-ops (
+            <code className="bg-status-amber/25 px-1 rounded">CHECKIN_ORDERS_BASE_URL</code> +{' '}
+            <code className="bg-status-amber/25 px-1 rounded">CHECKIN_API_SECRET</code>).
+          </div>
+        )}
+        {meta && meta.coyoteOpsConfigured && (
+          <div className="mb-6 rounded border border-border bg-muted/40 px-4 py-3 text-foreground text-sm">
+            coyote-ops dual-read is on — gate lookups merge Webflow cache with{' '}
+            <code className="rounded bg-muted px-1">next.coyoteforce.com/api/check-in/orders</code>.
           </div>
         )}
 

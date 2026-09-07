@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCachedWebflowOrders } from '@/lib/checkin-cache';
+import { isCoyoteOpsConfigured, isWebflowConfigured } from '@/lib/checkin-config';
 import { resolveCheckinPerson } from '@/lib/checkin-person';
 import { requireAdmin } from '@/lib/checkin-api';
+import {
+  CoyoteOpsOrdersError,
+  fetchCoyoteOpsOrders,
+  mergeNormalizedOrders,
+} from '@/lib/coyote-ops-orders';
 import { WebflowOrdersError } from '@/lib/webflow-orders';
 
 export async function POST(request: NextRequest) {
@@ -31,7 +37,34 @@ export async function POST(request: NextRequest) {
   const currentYear = new Date().getFullYear();
 
   try {
-    const { orders, stale, error } = await getCachedWebflowOrders();
+    let webflowOrders: Awaited<ReturnType<typeof getCachedWebflowOrders>> = {
+      orders: [],
+      stale: false,
+      newlyOrderedProductIds: new Set(),
+    };
+    if (isWebflowConfigured()) {
+      webflowOrders = await getCachedWebflowOrders();
+    }
+
+    let coyoteOrders: Awaited<ReturnType<typeof fetchCoyoteOpsOrders>> = [];
+    let coyoteOpsError: string | undefined;
+    if (isCoyoteOpsConfigured() && (email?.trim() || order_id?.trim())) {
+      try {
+        coyoteOrders = await fetchCoyoteOpsOrders({
+          code: order_id,
+          email,
+          event: event_id,
+        });
+      } catch (e) {
+        if (e instanceof CoyoteOpsOrdersError) {
+          coyoteOpsError = e.message;
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    const orders = mergeNormalizedOrders(webflowOrders.orders, coyoteOrders);
     const result = await resolveCheckinPerson(
       { name, email, phone, eventId: event_id, orderId: order_id },
       orders,
@@ -41,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (result.orderNotFound) {
       return NextResponse.json(
         {
-          error: 'No order with that ID in the cached Webflow orders',
+          error: 'No order with that ID in Webflow cache or coyote-ops',
           code: 'order_not_found',
         },
         { status: 404 }
@@ -50,14 +83,22 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ...result,
-      ordersStale: stale,
-      webflowError: error?.message,
+      ordersStale: webflowOrders.stale,
+      webflowError: webflowOrders.error?.message,
+      coyoteOpsError,
+      coyoteOpsHit: coyoteOrders.length > 0,
       currentYear,
     });
   } catch (e) {
     if (e instanceof WebflowOrdersError) {
       return NextResponse.json(
         { error: e.message, code: 'webflow', status: e.status },
+        { status: e.status >= 400 && e.status < 600 ? e.status : 502 }
+      );
+    }
+    if (e instanceof CoyoteOpsOrdersError) {
+      return NextResponse.json(
+        { error: e.message, code: 'coyote_ops', status: e.status },
         { status: e.status >= 400 && e.status < 600 ? e.status : 502 }
       );
     }

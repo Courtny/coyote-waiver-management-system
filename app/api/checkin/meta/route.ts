@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCheckinConfig, isWebflowConfigured } from '@/lib/checkin-config';
+import { getCheckinConfig, isCoyoteOpsConfigured, isOrdersSourceConfigured, isWebflowConfigured } from '@/lib/checkin-config';
 import { requireAdmin } from '@/lib/checkin-api';
 
 export async function GET(request: NextRequest) {
@@ -12,5 +12,7 @@ export async function GET(request: NextRequest) {
     events,
     eventsConfig,
     webflowConfigured: isWebflowConfigured(),
+    coyoteOpsConfigured: isCoyoteOpsConfigured(),
+    ordersSourceConfigured: isOrdersSourceConfigured(),
   });
 }
