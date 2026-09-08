@@ -9,6 +9,7 @@ export type CoyoteOpsCheckInLine = {
   name: string;
   quantity: number;
   faction: string | null;
+  productName?: string;
   productId: string | null;
   variantId: string | null;
   imageUrl?: string;
@@ -40,16 +41,32 @@ export class CoyoteOpsOrdersError extends Error {
   }
 }
 
+export function coyoteOpsLineLabels(line: CoyoteOpsCheckInLine): {
+  productName: string;
+  displayName: string;
+} {
+  const productName = (line.productName || '').trim();
+  const skuName = (line.name || '').trim();
+  if (productName && skuName && skuName !== productName) {
+    return { productName, displayName: `${productName} — ${skuName}` };
+  }
+  const fallback = productName || skuName;
+  return { productName: fallback, displayName: fallback };
+}
+
 export function normalizeCoyoteOpsOrder(order: CoyoteOpsCheckInOrder): NormalizedOrder {
-  const lines: NormalizedLineItem[] = order.lines.map((line) => ({
-    productId: line.productId ?? '',
-    productName: line.name,
-    variantId: line.variantId ?? '',
-    sku: line.sku,
-    displayName: line.name,
-    quantity: line.quantity,
-    ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
-  }));
+  const lines: NormalizedLineItem[] = order.lines.map((line) => {
+    const labels = coyoteOpsLineLabels(line);
+    return {
+      productId: line.productId ?? '',
+      productName: labels.productName,
+      variantId: line.variantId ?? '',
+      sku: line.sku,
+      displayName: labels.displayName,
+      quantity: line.quantity,
+      ...(line.imageUrl ? { imageUrl: line.imageUrl } : {}),
+    };
+  });
 
   const paidCents =
     typeof order.totalPaidCents === 'number' && Number.isFinite(order.totalPaidCents)

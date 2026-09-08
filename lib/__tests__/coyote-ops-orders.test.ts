@@ -4,6 +4,7 @@ import {
   mergeNormalizedOrders,
   nextCoyoteOpsListOffset,
   normalizeCoyoteOpsOrder,
+  coyoteOpsLineLabels,
   type CoyoteOpsCheckInOrder,
 } from '../coyote-ops-orders';
 import type { NormalizedOrder } from '../webflow-orders';
@@ -39,6 +40,7 @@ const coyoteOrder: CoyoteOpsCheckInOrder = {
       name: 'Open Play — Saturday',
       quantity: 2,
       faction: null,
+      productName: 'Coyote Airsoft - Open Play',
       productId: '66a2a82ee43b0a9a111c999c',
       variantId: 'var-sat',
       imageUrl: 'https://cdn.example/open-play.jpg',
@@ -67,6 +69,8 @@ describe('normalizeCoyoteOpsOrder', () => {
     assert.equal(n.acceptedOn, '2026-09-06T15:00:00.000Z');
     assert.equal(n.customerPaidAmount, 45);
     assert.equal(n.lines[0].productId, '66a2a82ee43b0a9a111c999c');
+    assert.equal(n.lines[0].productName, 'Coyote Airsoft - Open Play');
+    assert.equal(n.lines[0].displayName, 'Coyote Airsoft - Open Play — Open Play — Saturday');
     assert.equal(n.lines[0].imageUrl, 'https://cdn.example/open-play.jpg');
     assert.equal(n.lines[0].quantity, 2);
   });
@@ -74,6 +78,22 @@ describe('normalizeCoyoteOpsOrder', () => {
   it('falls back to createdAt when paidAt is null', () => {
     const n = normalizeCoyoteOpsOrder({ ...coyoteOrder, paidAt: null, status: 'pending' });
     assert.equal(n.acceptedOn, '2026-09-06T14:59:00.000Z');
+  });
+});
+
+describe('coyoteOpsLineLabels', () => {
+  it('uses catalog product title for event cards, SKU name for the line', () => {
+    const labels = coyoteOpsLineLabels({
+      sku: 'entry-coyote-syndicate',
+      name: 'Entry · Coyote Syndicate',
+      quantity: 1,
+      faction: 'coyote-syndicate',
+      productName: 'Airsoft FTX: Migration',
+      productId: '6a9ddc3e212a5c6a80e695a8',
+      variantId: 'var-1',
+    });
+    assert.equal(labels.productName, 'Airsoft FTX: Migration');
+    assert.equal(labels.displayName, 'Airsoft FTX: Migration — Entry · Coyote Syndicate');
   });
 });
 
