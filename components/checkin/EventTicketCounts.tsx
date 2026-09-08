@@ -76,6 +76,7 @@ type EventDetailPanelProps = {
   detailLoading: boolean;
   ordersStale: boolean;
   webflowError?: string;
+  coyoteOpsError?: string;
   showAsActive: boolean;
   onShowAsActiveChange: (next: boolean) => Promise<void>;
   onBack: () => void;
@@ -311,6 +312,7 @@ function EventDetailPanel({
   detailLoading,
   ordersStale,
   webflowError,
+  coyoteOpsError,
   showAsActive,
   onShowAsActiveChange,
   onBack,
@@ -435,9 +437,9 @@ function EventDetailPanel({
         Back to event list
       </button>
 
-      {ordersStale && webflowError && (
+      {ordersStale && (webflowError || coyoteOpsError) && (
         <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
-          Showing cached orders; refresh failed: {webflowError}
+          Showing cached orders; refresh failed: {coyoteOpsError || webflowError}
         </div>
       )}
 
@@ -863,13 +865,18 @@ function EventCardGrid({
   );
 }
 
-export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: boolean }) {
+export function EventTicketCounts({
+  ordersSourceConfigured,
+}: {
+  ordersSourceConfigured: boolean;
+}) {
   const router = useRouter();
   const [events, setEvents] = useState<EventAttendanceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [ordersStale, setOrdersStale] = useState(false);
   const [webflowError, setWebflowError] = useState<string | undefined>();
+  const [coyoteOpsError, setCoyoteOpsError] = useState<string | undefined>();
 
   const [detail, setDetail] = useState<{
     productId: string;
@@ -904,6 +911,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
       );
       setOrdersStale(Boolean(data.ordersStale));
       setWebflowError(data.webflowError);
+      setCoyoteOpsError(data.coyoteOpsError);
     } catch {
       setError('Network error');
       setEvents([]);
@@ -945,6 +953,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
       }
       setOrdersStale(Boolean(data.ordersStale));
       setWebflowError(data.webflowError);
+      setCoyoteOpsError(data.coyoteOpsError);
     } catch {
       setError('Network error');
       setDetail(null);
@@ -987,11 +996,13 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
     }
   };
 
-  if (!webflowConfigured) {
+  if (!ordersSourceConfigured) {
     return (
       <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
-        Connect Webflow (<code className="bg-status-amber/25 px-1 rounded">WEBFLOW_API_TOKEN</code> and{' '}
-        <code className="bg-status-amber/25 px-1 rounded">WEBFLOW_SITE_ID</code>) to see ticket counts by product.
+        Connect coyote-ops (<code className="bg-status-amber/25 px-1 rounded">CHECKIN_ORDERS_BASE_URL</code> and{' '}
+        <code className="bg-status-amber/25 px-1 rounded">CHECKIN_API_SECRET</code>) to see ticket counts by product.
+        Webflow (<code className="bg-status-amber/25 px-1 rounded">WEBFLOW_API_TOKEN</code>) remains an optional merge for
+        historical cache.
       </div>
     );
   }
@@ -1003,6 +1014,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         detailLoading={detailLoading}
         ordersStale={ordersStale}
         webflowError={webflowError}
+        coyoteOpsError={coyoteOpsError}
         showAsActive={detailShowAsActive}
         onShowAsActiveChange={handleShowAsActiveChange}
         onBack={closeDetail}
@@ -1015,7 +1027,7 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-muted-foreground text-sm">
-          Ticket totals from cached Webflow orders, grouped by product (event). Open a card for orders and rental counts.
+          Ticket totals from coyote-ops (Vercel store), grouped by product (event). Open a card for orders and rental counts.
         </p>
         <button
           type="button"
@@ -1028,9 +1040,9 @@ export function EventTicketCounts({ webflowConfigured }: { webflowConfigured: bo
         </button>
       </div>
 
-      {ordersStale && webflowError && (
+      {ordersStale && (webflowError || coyoteOpsError) && (
         <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
-          Showing cached orders; refresh failed: {webflowError}
+          Showing cached orders; refresh failed: {coyoteOpsError || webflowError}
         </div>
       )}
 

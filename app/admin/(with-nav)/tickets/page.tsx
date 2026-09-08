@@ -13,6 +13,8 @@ type Meta = {
   events: { id: string; label: string }[];
   eventsConfig?: EventsConfigStatus;
   webflowConfigured: boolean;
+  coyoteOpsConfigured?: boolean;
+  ordersSourceConfigured?: boolean;
 };
 
 export default function AdminTicketsPage() {
@@ -58,7 +60,7 @@ export default function AdminTicketsPage() {
       backHref="/admin/dashboard"
       description={
         <>
-          Totals from cached Webflow orders, by product and SKU.{' '}
+          Totals from coyote-ops store orders (Vercel), by product and SKU.{' '}
           <Link href="/admin/checkin" className="font-medium text-link underline underline-offset-4 hover:text-link-hover">
             Player check-in →
           </Link>
@@ -67,13 +69,19 @@ export default function AdminTicketsPage() {
     >
       {meta && (
         <EventsConfigBanner
-          webflowConfigured={meta.webflowConfigured}
+          ordersSourceConfigured={Boolean(
+            meta.ordersSourceConfigured ?? meta.coyoteOpsConfigured ?? meta.webflowConfigured
+          )}
           eventsCount={meta.events?.length ?? 0}
           eventsConfig={meta.eventsConfig}
         />
       )}
       <div className="rounded border border-border bg-card p-6">
-        <EventTicketCounts webflowConfigured={Boolean(meta?.webflowConfigured)} />
+        <EventTicketCounts
+          ordersSourceConfigured={Boolean(
+            meta?.ordersSourceConfigured ?? meta?.coyoteOpsConfigured ?? meta?.webflowConfigured
+          )}
+        />
       </div>
     </AdminPageShell>
   );

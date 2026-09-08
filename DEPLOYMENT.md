@@ -50,11 +50,15 @@ Save this value securely - you'll need it in Step 3.
    - When set, posts a message to Discord on each new waiver with the signer's name and a "See it here" link
    - Waiver submission succeeds even if the webhook is missing or Discord fails
 
-   **WEBFLOW_API_TOKEN** and **WEBFLOW_SITE_ID** (optional – Check-In and ticket rollups)
-   - Required for `/admin/checkin` and `/admin/tickets` to show Webflow ecommerce orders. Without them, waiver lookup still works; purchases and ticket counts stay empty.
+   **CHECKIN_ORDERS_BASE_URL** and **CHECKIN_API_SECRET** (required after store cutover – Check-In and ticket rollups)
+   - Waiver `/admin/tickets` and `/admin/checkin` read paid/pending orders from Vercel coyote-ops (`GET /api/check-in/orders`).
+   - Base URL: `https://coyoteforce.com`. Secret: same `CHECKIN_API_SECRET` as Vercel project `coyote`.
+   - Environment: add to **Production** and **Preview**, then redeploy.
+
+   **WEBFLOW_API_TOKEN** and **WEBFLOW_SITE_ID** (optional – historical Ecommerce cache)
+   - Still merged when set. Without coyote-ops *and* Webflow, waiver lookup still works; purchases and ticket counts stay empty.
    - Token: Webflow workspace → **Workspace settings** → **Integrations** / **API access** → generate token with **`ecommerce:read`** (and **`sites:read`** if available).
    - Site ID: site **Site settings → General**, or `GET https://api.webflow.com/v2/sites` with the token and copy the site `id`.
-   - Environment: add to **Production** and **Preview** (and Development if you use Vercel dev) so branch previews work.
    - See repository **`.env.example`** for optional `CHECKIN_*` JSON variables (party size map, gate filter, etc.).
 
    **CHECKIN_EVENTS_JSON** (optional – gate / product filter override)

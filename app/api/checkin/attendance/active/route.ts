@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildSingleProductSummary } from '@/lib/attendance-summary-cached';
 import { requireAdmin } from '@/lib/checkin-api';
-import { getCachedWebflowOrders } from '@/lib/checkin-cache';
+import { getCachedCheckinOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
 import { setEventActiveFlag } from '@/lib/event-ticket-active';
 import {
@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest) {
     } else {
       // Active → Past: snapshot current counts from cached orders
       const { events, skuDisplay } = getCheckinConfig();
-      const { orders } = await getCachedWebflowOrders();
+      const { orders } = await getCachedCheckinOrders();
       const snapshot = buildSingleProductSummary(orders, productId, events, skuDisplay);
       if (snapshot) {
         await upsertFrozenSummary(snapshot);

@@ -39,6 +39,7 @@ export default function AdminCustomersLeaderboardPage() {
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [ordersStale, setOrdersStale] = useState(false);
   const [webflowError, setWebflowError] = useState<string | undefined>();
+  const [coyoteOpsError, setCoyoteOpsError] = useState<string | undefined>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -59,10 +60,12 @@ export default function AdminCustomersLeaderboardPage() {
         customers: CustomerRow[];
         ordersStale?: boolean;
         webflowError?: string;
+        coyoteOpsError?: string;
       };
       setCustomers(data.customers || []);
       setOrdersStale(Boolean(data.ordersStale));
       setWebflowError(data.webflowError);
+      setCoyoteOpsError(data.coyoteOpsError);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'An error occurred');
       setCustomers([]);
@@ -91,7 +94,7 @@ export default function AdminCustomersLeaderboardPage() {
   const emptyMessage = useMemo(() => {
     if (loading) return null;
     if (customers.length > 0) return null;
-    return 'No Webflow orders in cache yet, or Webflow is not configured.';
+    return 'No store orders found yet. Ticket counts need CHECKIN_ORDERS_BASE_URL + CHECKIN_API_SECRET (coyote-ops).';
   }, [loading, customers.length]);
 
   if (!isAuthenticated) {
@@ -108,13 +111,7 @@ export default function AdminCustomersLeaderboardPage() {
       backHref="/admin/dashboard"
       description={
         <>
-          Spend uses Webflow order totals (prefer <code className="text-sm bg-muted px-1 rounded">customerPaid</code>
-          , then <code className="text-sm bg-muted px-1 rounded">netAmount</code>
-          , else sum of line <code className="text-sm bg-muted px-1 rounded">rowTotal</code>). Amounts prefer the
-          formatted <code className="text-sm bg-muted px-1 rounded">string</code> field; bare integer{' '}
-          <code className="text-sm bg-muted px-1 rounded">value</code> is treated as cents for USD-like currencies.
-          If totals look wrong, set env{' '}
-          <code className="text-sm bg-muted px-1 rounded">CHECKIN_WEBFLOW_MONEY_MINOR_UNITS=0</code>. Ticket qty is
+          Spend uses coyote-ops order totals after cutover (Webflow cache still merged when configured). Ticket qty is
           the sum of all line quantities.{' '}
           <Link href="/admin/tickets" className="font-medium text-link underline underline-offset-4 hover:text-link-hover">
             Event ticket counts →
@@ -123,9 +120,9 @@ export default function AdminCustomersLeaderboardPage() {
       }
     >
       <div className="rounded border border-border bg-card p-6 space-y-4">
-        {ordersStale && webflowError && (
+        {ordersStale && (webflowError || coyoteOpsError) && (
           <div className="rounded border border-status-amber/40 bg-status-amber/15 px-4 py-3 text-foreground text-sm">
-            Showing cached orders; refresh failed: {webflowError}
+            Showing cached orders; refresh failed: {coyoteOpsError || webflowError}
           </div>
         )}
 

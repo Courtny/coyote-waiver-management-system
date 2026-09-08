@@ -8,8 +8,9 @@ import {
 } from '@/lib/checkin-attendance';
 import { enrichAttendanceLinesWithWaiverIndicators } from '@/lib/attendance-waiver-enrich';
 import { requireAdmin } from '@/lib/checkin-api';
-import { getCachedWebflowOrders } from '@/lib/checkin-cache';
+import { getCachedCheckinOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { CoyoteOpsOrdersError } from '@/lib/coyote-ops-orders';
 import { getEventActiveFlag } from '@/lib/event-ticket-active';
 import { attachCheckinStatus, countCheckedInTickets, getCheckinsForProduct } from '@/lib/ticket-checkin';
 import { WebflowOrdersError } from '@/lib/webflow-orders';
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
   const currentYear = new Date().getFullYear();
 
   try {
-    const { orders, stale, error } = await getCachedWebflowOrders();
+    const { orders, stale, error, coyoteOpsError } = await getCachedCheckinOrders();
     const rawLines = buildEventAttendanceLines(orders, productId, skuDisplay, skuPartySize);
     const lines = await enrichAttendanceLinesWithWaiverIndicators(rawLines, currentYear);
     const title = resolveEventTitle(productId, orders, events);
@@ -57,12 +58,17 @@ export async function GET(request: NextRequest) {
       ticketTotal,
       showAsActive,
       ordersStale: stale,
-      webflowError: error?.message,
+      webflowError: error instanceof WebflowOrdersError ? error.message : undefined,
+      coyoteOpsError,
     });
   } catch (e) {
-    if (e instanceof WebflowOrdersError) {
+    if (e instanceof WebflowOrdersError || e instanceof CoyoteOpsOrdersError) {
       return NextResponse.json(
-        { error: e.message, code: 'webflow', lines: [] },
+        {
+          error: e.message,
+          code: e instanceof CoyoteOpsOrdersError ? 'coyote_ops' : 'webflow',
+          lines: [],
+        },
         { status: e.status >= 400 && e.status < 600 ? e.status : 502 }
       );
     }

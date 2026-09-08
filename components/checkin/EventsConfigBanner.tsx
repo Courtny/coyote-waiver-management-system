@@ -1,17 +1,17 @@
 import type { EventsConfigStatus } from '@/lib/checkin-config';
 
 type EventsConfigBannerProps = {
-  webflowConfigured: boolean;
+  ordersSourceConfigured: boolean;
   eventsCount: number;
   eventsConfig?: EventsConfigStatus;
 };
 
 export function EventsConfigBanner({
-  webflowConfigured,
+  ordersSourceConfigured,
   eventsCount,
   eventsConfig,
 }: EventsConfigBannerProps) {
-  if (!webflowConfigured) return null;
+  if (!ordersSourceConfigured) return null;
 
   const showFallback = eventsConfig?.source === 'file';
   const showMissing = eventsCount === 0;

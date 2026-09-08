@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCachedWebflowOrders } from '@/lib/checkin-cache';
+import { getCachedCheckinOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
 import { openPlayCorsHeaders } from '@/lib/open-play-cors';
 import {
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   const { skuPartySize } = getCheckinConfig();
 
   try {
-    const { orders, stale } = await getCachedWebflowOrders();
+    const { orders, stale } = await getCachedCheckinOrders();
     const aggregates = aggregateOpenPlayTicketCounts(orders, cfg, skuPartySize, bounds);
     const payload = buildOpenPlayPublicPayload(aggregates, bounds, { configured: true, ordersStale: stale });
 

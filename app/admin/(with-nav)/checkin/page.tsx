@@ -265,14 +265,17 @@ export default function AdminCheckInPage() {
         )}
         {meta && meta.coyoteOpsConfigured && (
           <div className="mb-6 rounded border border-border bg-muted/40 px-4 py-3 text-foreground text-sm">
-            coyote-ops dual-read is on — gate lookups merge Webflow cache with{' '}
-            <code className="rounded bg-muted px-1">next.coyoteforce.com/api/check-in/orders</code>.
+            coyote-ops is on — gate lookups and ticket counts read{' '}
+            <code className="rounded bg-muted px-1">coyoteforce.com/api/check-in/orders</code>
+            {meta.webflowConfigured ? ' (merged with Webflow cache when present)' : ''}.
           </div>
         )}
 
         {meta && (
           <EventsConfigBanner
-            webflowConfigured={meta.webflowConfigured}
+            ordersSourceConfigured={Boolean(
+              meta.ordersSourceConfigured ?? meta.coyoteOpsConfigured ?? meta.webflowConfigured
+            )}
             eventsCount={meta.events?.length ?? 0}
             eventsConfig={meta.eventsConfig}
           />

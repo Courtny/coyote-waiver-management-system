@@ -190,7 +190,7 @@ export function isWebflowConfigured(): boolean {
   return Boolean(c.webflowToken && c.webflowSiteId);
 }
 
-/** coyote-ops check-in API (P6) — lookup by code/email on next.coyoteforce.com */
+/** coyote-ops check-in + ticket-count API — list/lookup on coyoteforce.com */
 export function isCoyoteOpsConfigured(): boolean {
   const c = getCheckinConfig();
   return Boolean(c.coyoteOpsOrdersBaseUrl && c.coyoteOpsCheckinSecret);

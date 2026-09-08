@@ -6,9 +6,9 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 
 - **Waiver Submission**: Personal info, emergency contact, electronic signature, photo release, minor tracking
 - **Admin Dashboard**: Fuzzy search with typeahead, waiver status validation, admin user management
-- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus Webflow ecommerce orders (cached)
-- **Ticket counts** (`/admin/tickets`): Tickets sold per product/SKU and a drill-down table by customer (same Webflow cache)
-- **Variant images**: When Webflow order line items include `variantImage`, thumbnails appear on Check-In purchases and Ticket counts (no extra env vars)
+- **Check-In** (`/admin/checkin`): Person-first lookup — current-year waiver status plus coyote-ops store orders (optional Webflow cache merge)
+- **Ticket counts** (`/admin/tickets`): Tickets sold per product/SKU from coyote-ops (Vercel), with a drill-down table by customer
+- **Variant images**: Line-item thumbnails from coyote-ops SKU/product images (or Webflow `variantImage` when that cache is still used)
 - **Security**: JWT authentication, bcrypt password hashing
 
 ## Tech Stack
@@ -16,7 +16,8 @@ Waiver management system for Coyote Force Airsoft and Paintball. Players submit 
 - Next.js 14, TypeScript, Tailwind CSS
 - PostgreSQL (Supabase), `pg`
 - JWT, bcryptjs
-- Webflow Data API v2 (ecommerce orders) via server-side fetch
+- Webflow Data API v2 (optional historical ecommerce cache) via server-side fetch
+- coyote-ops check-in API on Vercel (`GET /api/check-in/orders`)
 - Lucide React (icons), date-fns
 - @vercel/analytics
 - `@courtny/coyote-force-ui` (GitHub Packages; imported as `@coyote-force/ui`)
@@ -70,7 +71,7 @@ Add your database URL:
 DATABASE_URL=your-supabase-connection-string
 ```
 
-**Webflow (check-in purchases):** add `WEBFLOW_API_TOKEN` and `WEBFLOW_SITE_ID` to the same file. See [Check-In / Webflow](#check-in--webflow-optional) for where to get them.
+**Webflow (optional historical cache):** add `WEBFLOW_API_TOKEN` and `WEBFLOW_SITE_ID` if you still want to merge the old Ecommerce cache. After cutover, ticket counts come from coyote-ops (`CHECKIN_ORDERS_BASE_URL` + `CHECKIN_API_SECRET`). See [Check-In / coyote-ops](#check-in--coyote-ops) below.
 
 4. Create admin user:
 ```bash
@@ -118,9 +119,26 @@ For a short local setup walkthrough (JWT, `DATABASE_URL`, admin user), see **[SE
 
 **Admins**: Navigate to home page → "Admin Login" → Search waivers, **Check-In** (gate), **Ticket counts**, or manage users
 
-### Check-In / Webflow (optional)
+### Check-In / coyote-ops
 
-For purchase history on **Check-In** and rollups on **Ticket counts**, you need a Webflow Data API token and your **Site ID**. Copy variable names from [`.env.example`](./.env.example).
+After store cutover, **Check-In** and **Ticket counts** read paid/pending orders from the Vercel store (`GET https://coyoteforce.com/api/check-in/orders`).
+
+| Variable | Description |
+| -------- | ----------- |
+| `CHECKIN_ORDERS_BASE_URL` | Store origin, e.g. `https://coyoteforce.com` |
+| `CHECKIN_API_SECRET` | Same Bearer secret as Vercel project `coyote` |
+| `WEBFLOW_API_TOKEN` | Optional. Historical Webflow Ecommerce cache merge |
+| `WEBFLOW_SITE_ID` | Optional. Used with the Webflow token |
+| `CHECKIN_SKU_PARTY_SIZE` | Optional JSON map, e.g. `{"my-sku-slug":3}` for party-size hints |
+| `CHECKIN_SKU_DISPLAY` | Optional JSON map `sku → short label` for cleaner line names |
+| `CHECKIN_EVENTS_JSON` | Optional override for gate filter events; canonical list in `config/checkin-events.json` (used when unset/invalid) |
+| `CHECKIN_CACHE_TTL_MS` | Optional cache TTL (default 7 minutes) |
+
+If both coyote-ops and Webflow env vars are omitted, waiver lookup still works; purchases and ticket counts stay empty.
+
+### Webflow (optional historical cache)
+
+To keep merging pre-cutover Webflow Ecommerce into the same screens:
 
 **1. API token (`WEBFLOW_API_TOKEN`)**
 
@@ -147,12 +165,8 @@ For purchase history on **Check-In** and rollups on **Ticket counts**, you need 
 | -------- | ----------- |
 | `WEBFLOW_API_TOKEN` | Bearer token (see above) |
 | `WEBFLOW_SITE_ID` | Site UUID from settings or `GET /v2/sites` |
-| `CHECKIN_SKU_PARTY_SIZE` | Optional JSON map, e.g. `{"my-sku-slug":3}` for party-size hints |
-| `CHECKIN_SKU_DISPLAY` | Optional JSON map `sku → short label` for cleaner line names |
-| `CHECKIN_EVENTS_JSON` | Optional override for gate filter events; canonical list in `config/checkin-events.json` (used when unset/invalid) |
-| `CHECKIN_CACHE_TTL_MS` | Optional cache TTL (default 7 minutes) |
 
-If Webflow env vars are omitted, waiver lookup still works; purchases will be empty.
+Webflow is optional after cutover. Ticket counts use coyote-ops when `CHECKIN_ORDERS_BASE_URL` and `CHECKIN_API_SECRET` are set.
 
 ### Webflow Embed Snippets
 
