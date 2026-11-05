@@ -3,6 +3,7 @@ import { buildSingleProductSummary } from '@/lib/attendance-summary-cached';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedCheckinOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { getCheckinEvents } from '@/lib/coyote-ops-events';
 import { setEventActiveFlag } from '@/lib/event-ticket-active';
 import {
   deleteFrozenSummary,
@@ -37,7 +38,8 @@ export async function PATCH(request: NextRequest) {
       await deleteFrozenSummary(productId);
     } else {
       // Active → Past: snapshot current counts from cached orders
-      const { events, skuDisplay } = getCheckinConfig();
+      const { skuDisplay } = getCheckinConfig();
+      const { events } = await getCheckinEvents();
       const { orders } = await getCachedCheckinOrders();
       const snapshot = buildSingleProductSummary(orders, productId, events, skuDisplay);
       if (snapshot) {

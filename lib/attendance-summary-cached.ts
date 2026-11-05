@@ -5,6 +5,7 @@ import {
   collectProductIdsFromOrders,
   collectProductTitles,
   compareAttendanceSummaries,
+  eventDatesById,
   mergeAttendanceSummaries,
   resolveShowAsActive,
   type EventAttendanceSummary,
@@ -43,10 +44,12 @@ export async function buildCachedAttendanceSummary(options: {
   const activeIds = new Set<string>();
   const pastIds = new Set<string>();
   const candidateIds = new Set<string>([...allProductIds, ...frozenPast.keys()]);
+  const eventDates = eventDatesById(events);
 
   for (const productId of candidateIds) {
     const title = titlesByProduct.get(productId) || `Product ${productId}`;
-    if (resolveShowAsActive({ productId, title }, flags)) activeIds.add(productId);
+    const eventDate = eventDates.get(productId);
+    if (resolveShowAsActive({ productId, title, eventDate }, flags)) activeIds.add(productId);
     else pastIds.add(productId);
   }
 

@@ -1,7 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 
-export type CheckinEventOption = { id: string; label: string; eventPatchCount?: number };
+export type CheckinEventOption = {
+  id: string;
+  label: string;
+  eventPatchCount?: number;
+  /** YYYY-MM-DD. Upcoming events default to Active on ticket counts. */
+  eventDate?: string;
+};
+
+const EVENT_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export type EventsConfigSource = 'env' | 'file' | 'none';
 
@@ -55,7 +63,16 @@ export function normalizeEventsArray(arr: unknown): CheckinEventOption[] {
         typeof o.eventPatchCount === 'number' ? o.eventPatchCount : Number(o.eventPatchCount);
       const eventPatchCount =
         Number.isFinite(rawPatch) && rawPatch >= 1 ? Math.floor(rawPatch) : undefined;
-      return { id, label, ...(eventPatchCount ? { eventPatchCount } : {}) };
+      const eventDate =
+        typeof o.eventDate === 'string' && EVENT_DATE_RE.test(o.eventDate.trim())
+          ? o.eventDate.trim()
+          : undefined;
+      return {
+        id,
+        label,
+        ...(eventPatchCount ? { eventPatchCount } : {}),
+        ...(eventDate ? { eventDate } : {}),
+      };
     })
     .filter(Boolean) as CheckinEventOption[];
 }

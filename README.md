@@ -134,6 +134,8 @@ After store cutover, **Check-In** and **Ticket counts** read paid/pending orders
 | `CHECKIN_EVENTS_JSON` | Optional override for gate filter events; canonical list in `config/checkin-events.json` (used when unset/invalid) |
 | `CHECKIN_CACHE_TTL_MS` | Optional cache TTL (default 7 minutes) |
 
+**New events need no config change.** The gate filter and ticket counts also read `GET https://coyoteforce.com/api/check-in/events` (same secret): every dated store product from the last 90 days onward. Store events appear at the top of the gate filter, default to **Active** on Ticket counts through their event date, then move to **Past**. A staff Active/Past toggle still wins. Add an event to `config/checkin-events.json` only to override its label or set `eventPatchCount`.
+
 If both coyote-ops and Webflow env vars are omitted, waiver lookup still works; purchases and ticket counts stay empty.
 
 ### Webflow (optional historical cache)

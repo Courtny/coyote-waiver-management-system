@@ -10,6 +10,7 @@ import { enrichAttendanceLinesWithWaiverIndicators } from '@/lib/attendance-waiv
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedCheckinOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { getCheckinEvents } from '@/lib/coyote-ops-events';
 import { CoyoteOpsOrdersError } from '@/lib/coyote-ops-orders';
 import { getEventActiveFlag } from '@/lib/event-ticket-active';
 import { attachCheckinStatus, countCheckedInTickets, getCheckinsForProduct } from '@/lib/ticket-checkin';
@@ -24,10 +25,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing product_id' }, { status: 400 });
   }
 
-  const { events, skuDisplay, skuPartySize } = getCheckinConfig();
+  const { skuDisplay, skuPartySize } = getCheckinConfig();
   const currentYear = new Date().getFullYear();
 
   try {
+    const { events } = await getCheckinEvents();
     const { orders, stale, error, coyoteOpsError } = await getCachedCheckinOrders();
     const rawLines = buildEventAttendanceLines(orders, productId, skuDisplay, skuPartySize);
     const lines = await enrichAttendanceLinesWithWaiverIndicators(rawLines, currentYear);
@@ -48,7 +50,9 @@ export async function GET(request: NextRequest) {
     const { checkedInTotal, ticketTotal } = countCheckedInTickets(linesWithCheckins);
     const storedActive = await getEventActiveFlag(productId);
     const showAsActive =
-      storedActive !== undefined ? storedActive : defaultShowAsActive({ productId, title });
+      storedActive !== undefined
+        ? storedActive
+        : defaultShowAsActive({ productId, title, eventDate: eventCfg?.eventDate });
 
     return NextResponse.json({
       productId,

@@ -3,6 +3,7 @@ import { buildCachedAttendanceSummary } from '@/lib/attendance-summary-cached';
 import { requireAdmin } from '@/lib/checkin-api';
 import { getCachedCheckinOrders } from '@/lib/checkin-cache';
 import { getCheckinConfig } from '@/lib/checkin-config';
+import { getCheckinEvents } from '@/lib/coyote-ops-events';
 import { CoyoteOpsOrdersError } from '@/lib/coyote-ops-orders';
 import { getEventActiveFlags } from '@/lib/event-ticket-active';
 import { WebflowOrdersError } from '@/lib/webflow-orders';
@@ -11,9 +12,10 @@ export async function GET(request: NextRequest) {
   const denied = requireAdmin(request);
   if (denied) return denied;
 
-  const { events, skuDisplay } = getCheckinConfig();
+  const { skuDisplay } = getCheckinConfig();
 
   try {
+    const { events } = await getCheckinEvents();
     const { orders, stale, error, coyoteOpsError, newlyOrderedProductIds } =
       await getCachedCheckinOrders();
     const flags = await getEventActiveFlags();

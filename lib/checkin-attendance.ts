@@ -17,6 +17,8 @@ export type EventAttendanceSummary = {
   imageUrl?: string;
   /** True when the event should appear in the Active tickets section. */
   showAsActive?: boolean;
+  /** YYYY-MM-DD from event config / coyote-ops when known. */
+  eventDate?: string;
 };
 
 export type WaiverIndicatorDto = {
@@ -47,15 +49,44 @@ function displayForSku(sku: string, displayName: string, skuDisplay: Record<stri
   return displayName;
 }
 
+function findEventConfig(
+  productId: string,
+  variantIds: string[],
+  events: CheckinEventOption[]
+): CheckinEventOption | undefined {
+  return events.find((e) => e.id === productId || variantIds.includes(e.id));
+}
+
 function eventTitle(
   productId: string,
   variantIds: string[],
   productName: string,
   events: CheckinEventOption[]
 ): string {
-  const fromConfig = events.find((e) => e.id === productId || variantIds.includes(e.id));
+  const fromConfig = findEventConfig(productId, variantIds, events);
   if (fromConfig?.label) return fromConfig.label;
   return productName || `Product ${productId}`;
+}
+
+const FIELD_TIME_ZONE = 'America/Indiana/Indianapolis';
+
+/** Calendar day at the field (YYYY-MM-DD). */
+export function fieldTodayIso(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: FIELD_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+/** Product id → event date for configured / store events. */
+export function eventDatesById(events: CheckinEventOption[]): Map<string, string> {
+  const dates = new Map<string, string>();
+  for (const event of events) {
+    if (event.eventDate) dates.set(event.id.trim(), event.eventDate);
+  }
+  return dates;
 }
 
 /** Known Webflow product ids for Open Play (also matchable by title). */
@@ -85,25 +116,38 @@ export function openPlayPinRank(summary: { productId: string; title: string }): 
   return 2;
 }
 
+/** Event date when known (store-created products have no ObjectId timestamp), else id time. */
+function summaryRecencyMs(summary: { productId: string; eventDate?: string }): number {
+  if (summary.eventDate) {
+    const ms = Date.parse(`${summary.eventDate}T12:00:00Z`);
+    if (Number.isFinite(ms)) return ms;
+  }
+  return productIdCreatedAtMs(summary.productId);
+}
+
 export function compareAttendanceSummaries(
-  a: { productId: string; title: string },
-  b: { productId: string; title: string }
+  a: { productId: string; title: string; eventDate?: string },
+  b: { productId: string; title: string; eventDate?: string }
 ): number {
   const pinDiff = openPlayPinRank(a) - openPlayPinRank(b);
   if (pinDiff !== 0) return pinDiff;
-  const timeDiff = productIdCreatedAtMs(b.productId) - productIdCreatedAtMs(a.productId);
+  const timeDiff = summaryRecencyMs(b) - summaryRecencyMs(a);
   if (timeDiff !== 0) return timeDiff;
   return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
 }
 
-/** Open Play defaults to Active; other products default to Past. */
-export function defaultShowAsActive(summary: { productId: string; title: string }): boolean {
-  return openPlayPinRank(summary) < 2;
+/** Open Play and events dated today or later default to Active; everything else to Past. */
+export function defaultShowAsActive(
+  summary: { productId: string; title: string; eventDate?: string },
+  today: string = fieldTodayIso()
+): boolean {
+  if (openPlayPinRank(summary) < 2) return true;
+  return Boolean(summary.eventDate && summary.eventDate >= today);
 }
 
-/** Stored flag wins; otherwise Open Play is Active and everything else is Past. */
+/** Stored flag wins; otherwise fall back to `defaultShowAsActive`. */
 export function resolveShowAsActive(
-  summary: { productId: string; title: string },
+  summary: { productId: string; title: string; eventDate?: string },
   flags: Map<string, boolean>
 ): boolean {
   const stored = flags.get(summary.productId.trim());
@@ -373,14 +417,17 @@ export function buildAttendanceSummaries(
 
     const totalTickets = skuBreakdown.reduce((s, r) => s + r.quantity, 0);
     const imageUrl = agg.preferredCoverImageUrl || agg.imageUrl;
+    const variantIds = Array.from(agg.variantIds);
+    const eventDate = findEventConfig(agg.productId, variantIds, events)?.eventDate;
 
     summaries.push({
       productId: agg.productId,
-      title: eventTitle(agg.productId, Array.from(agg.variantIds), agg.productName, events),
+      title: eventTitle(agg.productId, variantIds, agg.productName, events),
       orderCount: agg.orderIds.size,
       totalTickets,
       skuBreakdown,
       ...(imageUrl ? { imageUrl } : {}),
+      ...(eventDate ? { eventDate } : {}),
     });
   }
 

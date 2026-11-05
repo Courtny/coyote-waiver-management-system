@@ -367,6 +367,44 @@ describe('resolveShowAsActive', () => {
     assert.equal(resolveShowAsActive(airsoft, new Map([[AIRSOFT_OPEN_PLAY_PRODUCT_ID, false]])), false);
     assert.equal(resolveShowAsActive(ftx, new Map([['6a4d0c5f884e0f0f15dcfd74', true]])), true);
   });
+
+  it('defaults dated events to active through game day, then past', () => {
+    const brokenLine = {
+      productId: 'fcfbe6f7-e4dd-4ef8-86c5-49b5cdba523a',
+      title: 'Airsoft FTX: Broken Line',
+      eventDate: '2026-11-28',
+    };
+    assert.equal(defaultShowAsActive(brokenLine, '2026-11-05'), true);
+    assert.equal(defaultShowAsActive(brokenLine, '2026-11-28'), true);
+    assert.equal(defaultShowAsActive(brokenLine, '2026-11-29'), false);
+  });
+});
+
+describe('store events in ticket summaries', () => {
+  it('carries the event date and sorts store events by it', () => {
+    const blackoutId = '0d6c2f0e-5a1b-4c2e-9d55-1b2a3c4d5e6f';
+    const brokenLineId = 'fcfbe6f7-e4dd-4ef8-86c5-49b5cdba523a';
+    const summaries = buildAttendanceSummaries(
+      [
+        orderWithProduct(blackoutId, 'Airsoft FTX: Blackout', 'ord-blackout'),
+        orderWithProduct(brokenLineId, 'Airsoft FTX: Broken Line', 'ord-broken-line'),
+        orderWithProduct('6a4d0c5f884e0f0f15dcfd74', 'Airsoft FTX: Dead Silence', 'ord-dead-silence'),
+      ],
+      [
+        { id: blackoutId, label: 'Airsoft FTX: Blackout', eventDate: '2026-11-01' },
+        { id: brokenLineId, label: 'Airsoft FTX: Broken Line', eventDate: '2026-11-28' },
+      ],
+      {}
+    );
+    assert.deepEqual(
+      summaries.map((s) => [s.title, s.eventDate ?? null]),
+      [
+        ['Airsoft FTX: Broken Line', '2026-11-28'],
+        ['Airsoft FTX: Blackout', '2026-11-01'],
+        ['Airsoft FTX: Dead Silence', null],
+      ]
+    );
+  });
 });
 
 describe('splitAttendanceSummaries', () => {
